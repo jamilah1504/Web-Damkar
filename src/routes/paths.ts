@@ -1,24 +1,19 @@
-import AdminEdukasi from '../pages/admin/Edukasi';
-
-// Definisikan "akar" atau path dasar untuk setiap modul/peran
 export const rootPaths = {
   authRoot: 'auth',
   adminRoot: 'admin',
   petugasRoot: 'petugas',
   masyarakatRoot: 'masyarakat',
-  rootPaths: '',
 };
 
-// Definisikan semua path spesifik yang bersifat RELATIF terhadap root-nya
 const paths = {
   // --- Path Publik ---
   landing: '/',
 
-  // --- Path Otentikasi (Relatif terhadap /auth) ---
+  // --- Path Otentikasi ---
   login: 'login',
   register: 'register',
 
-  // --- Path Admin (Relatif terhadap /admin) ---
+  // --- Path Admin ---
   adminDashboard: 'dashboard',
   adminLaporanMasuk: 'laporan/masuk',
   adminLaporanRiwayat: 'laporan/riwayat',
@@ -27,21 +22,22 @@ const paths = {
   adminNotifikasi: 'notifikasi',
   adminPengguna: 'pengguna',
   adminPengaturan: 'pengaturan',
-  AdminEdukasi: 'edukasi',
+  adminEdukasi: 'edukasi',
 
-  // --- Path Petugas (Relatif terhadap /petugas) ---
+  // --- Path Petugas ---
   petugasTugasAktif: 'tugas',
   petugasRiwayat: 'riwayat',
   petugasPeta: 'peta',
 
-  // --- Path Masyarakat (Relatif terhadap /masyarakat) ---
+  // --- Path Masyarakat ---
   masyarakatDashboard: 'dashboard',
+  masyarakatEdukasi: 'edukasi/list',
   masyarakatBuatLaporan: 'buat-laporan',
   masyarakatLacakLaporan: 'lacak-laporan',
   masyarakatAjukanKunjungan: 'ajukan-kunjungan',
 
   // --- Path Halaman Error ---
-  unauthorized: '/unauthorized', // Ini path absolut
+  unauthorized: '/unauthorized',
   notFound: '*',
 };
 

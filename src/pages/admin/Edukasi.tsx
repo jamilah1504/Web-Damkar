@@ -257,17 +257,25 @@ const AdminEdukasi: React.FC = () => {
                 </TableCell>
                 <TableCell>{formatDate(row.timestampDibuat)}</TableCell>
                 <TableCell align="center">
-                  <IconButton
+                  <Button
+                    variant="outlined"
                     color="primary"
                     size="small"
+                    startIcon={<EditIcon fontSize="small" />}
                     sx={{ mr: 1 }}
                     onClick={() => handleOpenEditModal(row)}
                   >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton color="error" size="small" onClick={() => setConfirmDelete(row)}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    startIcon={<DeleteIcon fontSize="small" />}
+                    onClick={() => setConfirmDelete(row)}
+                  >
+                    Hapus
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

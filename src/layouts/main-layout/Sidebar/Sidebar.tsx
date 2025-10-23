@@ -12,11 +12,11 @@ import {
 import { NavLink as RouterLink } from 'react-router-dom';
 
 import IconifyIcon from '../../../components/base/IconifyIcon';
-// import logo from '../../../assets/logo/elegant-logo.png';
 import logo from '../../../assets/logo/fireresponse-logo.png';
 import Image from '../../../components/base/Image';
 import NavButton from './NavButton';
 import paths, { rootPaths } from '../../../routes/paths';
+
 interface NavItem {
   title: string;
   path: string;
@@ -24,6 +24,7 @@ interface NavItem {
   collapsible: boolean;
   sublist?: NavItem[];
 }
+
 type UserRole = 'admin' | 'petugas' | 'masyarakat';
 
 // == NAVIGASI UNTUK ADMIN ==
@@ -62,7 +63,7 @@ const navItemsAdmin: NavItem[] = [
   },
   {
     title: 'Manajemen Konten Edukasi',
-    path: `/${rootPaths.adminRoot}/${paths.AdminEdukasi}`,
+    path: `/${rootPaths.adminRoot}/${paths.adminEdukasi}`, // Perbaiki dari 'AdminEdukasi'
     icon: 'ph:book-open-fill',
     collapsible: false,
   },
@@ -117,8 +118,14 @@ const navItemsMasyarakat: NavItem[] = [
     collapsible: false,
   },
   {
+    title: 'Edukasi Masyarakat',
+    path: `/${rootPaths.masyarakatRoot}/${paths.masyarakatEdukasi}`, // Perbaiki sintaks dan penamaan
+    icon: 'ph:book-open-fill',
+    collapsible: false,
+  },
+  {
     title: 'Laporan Saya',
-    path: `/${rootPaths.masyarakatRoot}/${paths.masyarakatLacakLaporan}`,
+    path: '#!',
     icon: 'ph:file-text-fill',
     collapsible: true,
     sublist: [
@@ -143,8 +150,9 @@ const navItemsMasyarakat: NavItem[] = [
 ];
 
 // 4. Buat fungsi untuk mendapatkan menu sesuai peran
-const getNavItemsByRole = (role: UserRole): NavItem[] => {
-  switch (role) {
+const getNavItemsByRole = (role: UserRole | string): NavItem[] => {
+  const normalizedRole = (role || '').replace(/\s/g, '').toLowerCase() as UserRole;
+  switch (normalizedRole) {
     case 'admin':
       return navItemsAdmin;
     case 'petugas':
@@ -157,8 +165,9 @@ const getNavItemsByRole = (role: UserRole): NavItem[] => {
 };
 
 const Sidebar = (): ReactElement => {
-  // Tentukan peran pengguna saat ini (ini akan dinamis di aplikasi nyata)
-  const currentUserRole: UserRole = 'admin';
+  // Ambil role dari localStorage alih-alih hardcode
+  const storedRole = localStorage.getItem('role') || 'unknown';
+  const currentUserRole = storedRole.replace(/\s/g, '').toLowerCase() as UserRole;
 
   // Panggil fungsi untuk mendapatkan item navigasi yang sesuai
   const navItems = getNavItemsByRole(currentUserRole);
@@ -192,20 +201,14 @@ const Sidebar = (): ReactElement => {
           borderRadius: 5,
         }}
       >
-        <Image
-          src={logo}
-          width={150} // Fixed width for the logo
-          height={50} // Fixed height to maintain aspect ratio
-          style={{ objectFit: 'contain' }} // Ensure the logo scales properly
-          alt="Logo"
-        />
+        <Image src={logo} width={150} height={50} style={{ objectFit: 'contain' }} alt="Logo" />
       </Link>
       <Divider
         sx={{
-          mx: 4.0625, // Match the horizontal margin of the logo
-          mt: 13.75, // Position below the logo (mt: 6.25 + height: 50px + mb: 3.75)
-          borderColor: '#ccc', // Subtle gray line
-          width: 150, // Match the logo's width for alignment
+          mx: 4.0625,
+          mt: 13.75,
+          borderColor: '#ccc',
+          width: 150,
         }}
       />
       <Stack

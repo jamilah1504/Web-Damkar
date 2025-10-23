@@ -1,4 +1,5 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement, useState, useEffect } from 'react';
+import axios from 'axios'; // Import axios
 import {
   Box,
   Button,
@@ -18,67 +19,128 @@ import {
   TableHead,
   TableRow,
   IconButton,
+  CircularProgress, // Untuk loading
+  Alert, // Untuk error
 } from '@mui/material';
 import IconifyIcon from 'components/base/IconifyIcon';
 
-// Tipe untuk data laporan yang di-generate
+// Konfigurasi apiClient (sesuaikan jika perlu)
+const apiClient = axios.create({
+  baseURL: 'http://localhost:5000/api', // Sesuaikan port jika backend berbeda
+});
+
+// Tipe untuk data laporan
 interface GeneratedReport {
-  id: number; // Menambahkan ID untuk identifikasi unik
+  id: number;
   title: string;
   period: string;
   totalIncidents: number;
   averageResponseTime: string;
+  // Tambahkan field lain jika ada, misal: fileUrl
 }
 
-// Data dummy awal untuk riwayat laporan yang sudah ada
-const initialRiwayatLaporan: GeneratedReport[] = [
-  {
-    id: 202508,
-    title: 'Laporan Insiden Bulanan',
-    period: 'Agustus 2025',
-    totalIncidents: 48,
-    averageResponseTime: '8 Menit 05 Detik',
-  },
-  {
-    id: 202507,
-    title: 'Laporan Insiden Bulanan',
-    period: 'Juli 2025',
-    totalIncidents: 62,
-    averageResponseTime: '7 Menit 40 Detik',
-  },
-];
+// Tipe untuk preview (mungkin belum punya ID)
+type ReportPreview = Omit<GeneratedReport, 'id'>;
 
 const AdminLaporanPeriodik = (): ReactElement => {
   // State untuk filter
   const [reportType, setReportType] = useState('bulanan');
-  const [month, setMonth] = useState('2025-09');
+  const [month, setMonth] = useState('2025-09'); // Default ke bulan yg valid
 
-  // State untuk preview laporan yang baru di-generate
-  const [previewData, setPreviewData] = useState<GeneratedReport | null>(null);
+  // State untuk preview laporan
+  const [previewData, setPreviewData] = useState<ReportPreview | null>(null);
 
-  // State untuk menyimpan daftar riwayat laporan (READ)
-  const [riwayatLaporan, setRiwayatLaporan] = useState<GeneratedReport[]>(initialRiwayatLaporan);
+  // State untuk daftar riwayat laporan (READ)
+  const [riwayatLaporan, setRiwayatLaporan] = useState<GeneratedReport[]>([]);
 
-  // Fungsi CREATE
-  const handleGenerateReport = () => {
-    const newId = Date.now(); // Generate ID unik sederhana
-    const dummyReport: GeneratedReport = {
-      id: newId,
-      title: 'Laporan Insiden Bulanan',
-      period: 'September 2025',
-      totalIncidents: 54,
-      averageResponseTime: '7 Menit 15 Detik',
-    };
-    // Tampilkan di area preview
-    setPreviewData(dummyReport);
-    // Tambahkan ke daftar riwayat
-    setRiwayatLaporan([dummyReport, ...riwayatLaporan]);
+  // State untuk loading dan error
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // --- FUNGSI READ (Riwayat) ---
+  const fetchRiwayat = async () => {
+    setLoadingHistory(true);
+    setError(null);
+    try {
+      // Asumsi: GET /api/laporan/riwayat mengembalikan daftar laporan
+      const response = await apiClient.get('/laporan');
+      setRiwayatLaporan(response.data.data || []);
+    } catch (err) {
+      console.error('Gagal mengambil riwayat:', err);
+      setError('Gagal mengambil riwayat laporan.');
+    } finally {
+      setLoadingHistory(false);
+    }
   };
 
-  // Fungsi DELETE
-  const handleDeleteReport = (idToDelete: number) => {
-    // Filter array untuk menghapus laporan dengan ID yang sesuai
-    setRiwayatLaporan(riwayatLaporan.filter((report) => report.id !== idToDelete));
+  // Panggil fetchRiwayat saat komponen pertama kali dimuat
+  useEffect(() => {
+    fetchRiwayat();
+  }, []);
+
+  // --- FUNGSI PREVIEW (dari Tombol Generate) ---
+  const handleGenerateReport = async () => {
+    setIsGenerating(true);
+    setPreviewData(null);
+    setError(null);
+    try {
+      // Asumsi: GET /api/laporan/preview mengembalikan data statistik untuk preview
+      const response = await apiClient.get('/laporan/preview', {
+        params: {
+          type: reportType,
+          month: month,
+        },
+      });
+      setPreviewData(response.data.data);
+    } catch (err: any) {
+      console.error('Gagal generate preview:', err);
+      setError(err.response?.data?.message || 'Gagal men-generate preview laporan.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // --- FUNGSI EXPORT (sekaligus CREATE) ---
+  const handleExport = async (format: 'pdf' | 'excel') => {
+    setError(null);
+    try {
+      // Asumsi: GET /api/laporan/export akan men-generate file DAN menyimpan ke riwayat
+      const params = new URLSearchParams({
+        type: reportType,
+        month: month,
+        format: format,
+      });
+
+      const url = `${apiClient.defaults.baseURL}/laporan/export?${params.toString()}`;
+
+      // Buka URL di tab baru untuk memicu download
+      window.open(url, '_blank');
+
+      // Beri jeda sedikit agar backend sempat memproses dan menyimpan
+      // lalu refresh daftar riwayat
+      setTimeout(() => {
+        fetchRiwayat();
+        setPreviewData(null); // Kosongkan preview setelah diekspor
+      }, 2000); // refresh setelah 2 detik
+    } catch (err: any) {
+      console.error('Gagal export:', err);
+      setError(err.response?.data?.message || 'Gagal mengekspor laporan.');
+    }
+  };
+
+  // --- FUNGSI DELETE ---
+  const handleDeleteReport = async (idToDelete: number) => {
+    setError(null);
+    try {
+      // Asumsi: DELETE /api/laporan/riwayat/:id untuk menghapus
+      await apiClient.delete(`/laporan/riwayat/${idToDelete}`);
+      // Refresh daftar riwayat setelah berhasil hapus
+      fetchRiwayat();
+    } catch (err: any) {
+      console.error('Gagal menghapus:', err);
+      setError(err.response?.data?.message || 'Gagal menghapus laporan.');
+    }
   };
 
   return (
@@ -92,6 +154,13 @@ const AdminLaporanPeriodik = (): ReactElement => {
           Generate dan kelola rekapitulasi data operasional.
         </Typography>
       </Grid>
+
+      {/* Error Global */}
+      {error && (
+        <Grid item xs={12}>
+          <Alert severity="error">{error}</Alert>
+        </Grid>
+      )}
 
       {/* Generator (CREATE) */}
       <Grid item xs={12} md={4}>
@@ -108,6 +177,7 @@ const AdminLaporanPeriodik = (): ReactElement => {
                 onChange={(e) => setReportType(e.target.value)}
               >
                 <MenuItem value="bulanan">Bulanan</MenuItem>
+                {/* Tambahkan opsi lain jika ada */}
               </Select>
             </FormControl>
             <TextField
@@ -117,8 +187,12 @@ const AdminLaporanPeriodik = (): ReactElement => {
               onChange={(e) => setMonth(e.target.value)}
               InputLabelProps={{ shrink: true }}
             />
-            <Button variant="contained" onClick={handleGenerateReport}>
-              Generate Laporan
+            <Button
+              variant="contained"
+              onClick={handleGenerateReport}
+              disabled={isGenerating} // Disable tombol saat loading
+            >
+              {isGenerating ? <CircularProgress size={24} /> : 'Generate Preview'}
             </Button>
           </Stack>
         </Paper>
@@ -141,11 +215,19 @@ const AdminLaporanPeriodik = (): ReactElement => {
               </Typography>
             </Stack>
             <Stack direction="row" spacing={2}>
-              <Button variant="outlined" startIcon={<IconifyIcon icon="ph:file-pdf-fill" />}>
-                Export ke PDF
+              <Button
+                variant="outlined"
+                startIcon={<IconifyIcon icon="ph:file-pdf-fill" />}
+                onClick={() => handleExport('pdf')}
+              >
+                Export ke PDF & Simpan
               </Button>
-              <Button variant="outlined" startIcon={<IconifyIcon icon="ph:file-xls-fill" />}>
-                Export ke Excel
+              <Button
+                variant="outlined"
+                startIcon={<IconifyIcon icon="ph:file-xls-fill" />}
+                onClick={() => handleExport('excel')}
+              >
+                Export ke Excel & Simpan
               </Button>
             </Stack>
           </Paper>
@@ -159,7 +241,9 @@ const AdminLaporanPeriodik = (): ReactElement => {
               justifyContent: 'center',
             }}
           >
-            <Typography color="text.secondary">Hasil generate akan ditampilkan di sini.</Typography>
+            <Typography color="text.secondary">
+              {isGenerating ? <CircularProgress /> : 'Hasil preview akan ditampilkan di sini.'}
+            </Typography>
           </Paper>
         )}
       </Grid>
@@ -180,25 +264,47 @@ const AdminLaporanPeriodik = (): ReactElement => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {riwayatLaporan.map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell>{row.title}</TableCell>
-                  <TableCell>{row.period}</TableCell>
-                  <TableCell>{row.totalIncidents}</TableCell>
-                  <TableCell align="center">
-                    <Button size="small" sx={{ mr: 1 }}>
-                      Download
-                    </Button>
-                    <IconButton
-                      color="error"
-                      size="small"
-                      onClick={() => handleDeleteReport(row.id)}
-                    >
-                      <IconifyIcon icon="ph:trash-fill" />
-                    </IconButton>
+              {loadingHistory ? (
+                <TableRow>
+                  <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
+                    <CircularProgress />
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : riwayatLaporan.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} align="center" sx={{ py: 3 }}>
+                    Belum ada riwayat laporan.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                riwayatLaporan.map((row) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell>{row.title}</TableCell>
+                    <TableCell>{row.period}</TableCell>
+                    <TableCell>{row.totalIncidents}</TableCell>
+                    <TableCell align="center">
+                      <Button
+                        size="small"
+                        sx={{ mr: 1 }}
+                        // Jika backend menyimpan URL file, gunakan ini:
+                        // href={row.fileUrl}
+                        // target="_blank"
+                        // Untuk saat ini, kita asumsikan download hanya dari export baru
+                        disabled // Hapus disabled jika punya fileUrl
+                      >
+                        Download
+                      </Button>
+                      <IconButton
+                        color="error"
+                        size="small"
+                        onClick={() => handleDeleteReport(row.id)}
+                      >
+                        <IconifyIcon icon="ph:trash-fill" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>

@@ -1,4 +1,3 @@
-// router.ts
 import { Suspense, lazy } from 'react';
 import { Outlet, RouteObject, createBrowserRouter } from 'react-router-dom';
 import paths, { rootPaths } from './paths';
@@ -6,7 +5,7 @@ import paths, { rootPaths } from './paths';
 // Komponen Wajib
 import PageLoader from '../components/loading/PageLoader';
 import Splash from '../components/loading/Splash';
-import ProtectedRoute from '../components/ProtectedRoute';
+// import ProtectedRoute from '../components/ProtectedRoute'; // Komentari atau hapus ini
 import AdminPeta from 'pages/admin/Peta';
 import AdminPengguna from 'pages/admin/Pengguna';
 import AdminNotifikasi from 'pages/admin/Notifikasi';
@@ -31,6 +30,7 @@ const Unauthorized = lazy(() => import('../pages/errors/Unauthorized'));
 const AdminDashboard = lazy(() => import('../pages/admin/Dashboard'));
 const AdminJadwal = lazy(() => import('../pages/admin/Jadwal'));
 const MasyarakatDashboard = lazy(() => import('../pages/masyarakat/MasyarakatDashboard'));
+const MasyarakatEdukasi = lazy(() => import('../pages/masyarakat/edukasi/EdukasiListPage'));
 const MasyarakatBuatLaporan = lazy(() => import('../pages/masyarakat/laporan/BuatLaporan'));
 const MasyarakatLacakLaporan = lazy(() => import('../pages/masyarakat/laporan/RiwayatLaporan'));
 const MasyarakatAjukanKunjungan = lazy(() => import('../pages/masyarakat/InformasiPublik'));
@@ -48,7 +48,7 @@ const routes: RouteObject[] = [
     children: [
       { path: paths.landing, element: <LandingPage /> },
       {
-        path: rootPaths.authRoot, // path: 'auth'
+        path: rootPaths.authRoot,
         element: (
           <AuthLayout>
             <Suspense fallback={<PageLoader />}>
@@ -62,10 +62,10 @@ const routes: RouteObject[] = [
         ],
       },
       {
-        element: <ProtectedRoute allowedRoles={['admin']} />,
+        // Hapus ProtectedRoute untuk admin
         children: [
           {
-            path: rootPaths.adminRoot, // path: 'admin'
+            path: rootPaths.adminRoot,
             element: (
               <AdminLayout>
                 <Suspense fallback={<PageLoader />}>
@@ -83,16 +83,16 @@ const routes: RouteObject[] = [
               { path: paths.adminPengaturan, element: <AdminPengaturan /> },
               { path: paths.adminLaporanMasuk, element: <AdminLaporanMasuk /> },
               { path: paths.adminLaporanRiwayat, element: <AdminLaporanRiwayat /> },
-              { path: paths.AdminEdukasi, element: <AdminEdukasi /> },
+              { path: paths.adminEdukasi, element: <AdminEdukasi /> },
             ],
           },
         ],
       },
       {
-        element: <ProtectedRoute allowedRoles={['masyarakat']} />,
+        // Hapus ProtectedRoute untuk masyarakat
         children: [
           {
-            path: rootPaths.masyarakatRoot, // path: 'masyarakat'
+            path: rootPaths.masyarakatRoot,
             element: (
               <MasyarakatLayout>
                 <Suspense fallback={<PageLoader />}>
@@ -103,6 +103,7 @@ const routes: RouteObject[] = [
             children: [
               { index: true, element: <MasyarakatDashboard /> },
               { path: paths.masyarakatDashboard, element: <MasyarakatDashboard /> },
+              { path: paths.masyarakatEdukasi, element: <MasyarakatEdukasi /> },
               { path: paths.masyarakatBuatLaporan, element: <MasyarakatBuatLaporan /> },
               { path: paths.masyarakatLacakLaporan, element: <MasyarakatLacakLaporan /> },
               { path: paths.masyarakatAjukanKunjungan, element: <MasyarakatAjukanKunjungan /> },
@@ -111,10 +112,10 @@ const routes: RouteObject[] = [
         ],
       },
       {
-        element: <ProtectedRoute allowedRoles={['petugas']} />,
+        // Hapus ProtectedRoute untuk petugas
         children: [
           {
-            path: rootPaths.petugasRoot, // path: 'petugas'
+            path: rootPaths.petugasRoot,
             element: (
               <PetugasLayout>
                 <Suspense fallback={<PageLoader />}>
@@ -123,7 +124,7 @@ const routes: RouteObject[] = [
               </PetugasLayout>
             ),
             children: [
-              { index: true, element: <PetugasTugasAktif /> }, // Default route for petugas
+              { index: true, element: <PetugasTugasAktif /> },
               { path: paths.petugasTugasAktif, element: <PetugasTugasAktif /> },
               { path: paths.petugasRiwayat, element: <PetugasRiwayat /> },
               { path: paths.petugasPeta, element: <PetugasPeta /> },

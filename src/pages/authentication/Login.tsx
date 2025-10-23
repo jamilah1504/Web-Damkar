@@ -39,8 +39,8 @@ const Login = (): ReactElement => {
       console.log('Data pengguna setelah login:', userData);
 
       if (userData && userData.role) {
-        const role = userData.role.toLowerCase();
-        console.log('Role yang diterima:', role);
+        const role = (userData.role || 'masyarakat').replace(/\s/g, '').toLowerCase();
+        console.log('Role yang diproses (REGEX clean):', `[${role}]`);
 
         localStorage.setItem('role', role);
         if (userData.token) {

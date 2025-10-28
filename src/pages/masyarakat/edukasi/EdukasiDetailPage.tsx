@@ -99,7 +99,7 @@ const EdukasiDetailPage: React.FC = () => {
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Button
         component={RouterLink}
-        to="/edukasi" // BENAR: ke halaman list
+        to="/masyarakat/edukasi" // BENAR: ke halaman list
         startIcon={<ArrowBackIcon />}
         sx={{ mb: 2 }}
       >

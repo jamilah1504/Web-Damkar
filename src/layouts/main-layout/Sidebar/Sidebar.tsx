@@ -48,8 +48,8 @@ const navItemsAdmin: NavItem[] = [
         collapsible: false,
       },
       {
-        title: 'Riwayat Laporan',
-        path: `/${rootPaths.adminRoot}/${paths.adminLaporanRiwayat}`,
+        title: 'Laporan Periodik',
+        path: `/${rootPaths.adminRoot}/${paths.adminLaporanPeriodik}`,
         icon: 'ph:file-text-fill',
         collapsible: false,
       },

@@ -1,3 +1,4 @@
+// src/pages/masyarakat/edukasi/EdukasiListPage.tsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
@@ -15,9 +16,8 @@ import {
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 
-// --- Bagian Ini Sebaiknya di-share dari file lain (misal: apiClient.ts) ---
 const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api', // Sesuaikan port
+  baseURL: 'http://localhost:5000/api',
 });
 
 interface EdukasiItem {
@@ -29,15 +29,12 @@ interface EdukasiItem {
   timestampDibuat: string;
 }
 
-// Helper untuk mengecek apakah URL adalah gambar
 const isImageUrl = (url: string | null): boolean => {
   if (!url) return false;
   return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
 };
 
-// Gambar default jika fileUrl bukan gambar atau tidak ada
 const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/300x160.png?text=Info+Damkar';
-// --------------------------------------------------------------------------
 
 const EdukasiListPage: React.FC = () => {
   const [edukasiList, setEdukasiList] = useState<EdukasiItem[]>([]);
@@ -49,7 +46,7 @@ const EdukasiListPage: React.FC = () => {
     setError('');
     try {
       const response = await apiClient.get('/edukasi');
-      setEdukasiList(response.data.data);
+      setEdukasiList(response.data.data || []);
     } catch (error) {
       console.error('Gagal mengambil data edukasi:', error);
       setError('Gagal mengambil data dari server.');
@@ -100,11 +97,10 @@ const EdukasiListPage: React.FC = () => {
                   boxShadow: 3,
                 }}
               >
-                {/* Area yang bisa diklik mengarah ke detail */}
                 <CardActionArea
                   component={Link}
-                  to={`/edukasi/detail/${item.id}`}
-                  sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}
+                  to={`/masyarakat/edukasi/detail/${item.id}`}
+                  sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
                 >
                   <CardMedia
                     component="img"

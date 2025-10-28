@@ -1,3 +1,5 @@
+// src/router.tsx (atau nama file routing kamu)
+
 import { Suspense, lazy } from 'react';
 import { Outlet, RouteObject, createBrowserRouter } from 'react-router-dom';
 import paths, { rootPaths } from './paths';
@@ -5,13 +7,12 @@ import paths, { rootPaths } from './paths';
 // Komponen Wajib
 import PageLoader from '../components/loading/PageLoader';
 import Splash from '../components/loading/Splash';
-// import ProtectedRoute from '../components/ProtectedRoute'; // Komentari atau hapus ini
 import AdminPeta from 'pages/admin/Peta';
 import AdminPengguna from 'pages/admin/Pengguna';
 import AdminNotifikasi from 'pages/admin/Notifikasi';
 import AdminPengaturan from 'pages/admin/Pengaturan';
 import AdminLaporanMasuk from 'pages/admin/laporan/LaporanMasuk';
-import AdminLaporanRiwayat from 'pages/admin/laporan/LaporanRiwayat';
+import AdminLaporanPeriodik from 'pages/admin/laporan/AdminLaporanPeriodik';
 import AdminEdukasi from 'pages/admin/Edukasi';
 
 // Layouts
@@ -31,6 +32,7 @@ const AdminDashboard = lazy(() => import('../pages/admin/Dashboard'));
 const AdminJadwal = lazy(() => import('../pages/admin/Jadwal'));
 const MasyarakatDashboard = lazy(() => import('../pages/masyarakat/MasyarakatDashboard'));
 const MasyarakatEdukasi = lazy(() => import('../pages/masyarakat/edukasi/EdukasiListPage'));
+const MasyarakatEdukasiDetail = lazy(() => import('../pages/masyarakat/edukasi/EdukasiDetailPage')); // TAMBAHKAN
 const MasyarakatBuatLaporan = lazy(() => import('../pages/masyarakat/laporan/BuatLaporan'));
 const MasyarakatLacakLaporan = lazy(() => import('../pages/masyarakat/laporan/RiwayatLaporan'));
 const MasyarakatAjukanKunjungan = lazy(() => import('../pages/masyarakat/InformasiPublik'));
@@ -62,7 +64,6 @@ const routes: RouteObject[] = [
         ],
       },
       {
-        // Hapus ProtectedRoute untuk admin
         children: [
           {
             path: rootPaths.adminRoot,
@@ -82,14 +83,13 @@ const routes: RouteObject[] = [
               { path: paths.adminPengguna, element: <AdminPengguna /> },
               { path: paths.adminPengaturan, element: <AdminPengaturan /> },
               { path: paths.adminLaporanMasuk, element: <AdminLaporanMasuk /> },
-              { path: paths.adminLaporanRiwayat, element: <AdminLaporanRiwayat /> },
+              { path: paths.adminLaporanPeriodik, element: <AdminLaporanPeriodik /> },
               { path: paths.adminEdukasi, element: <AdminEdukasi /> },
             ],
           },
         ],
       },
       {
-        // Hapus ProtectedRoute untuk masyarakat
         children: [
           {
             path: rootPaths.masyarakatRoot,
@@ -104,6 +104,7 @@ const routes: RouteObject[] = [
               { index: true, element: <MasyarakatDashboard /> },
               { path: paths.masyarakatDashboard, element: <MasyarakatDashboard /> },
               { path: paths.masyarakatEdukasi, element: <MasyarakatEdukasi /> },
+              { path: paths.masyarakatEdukasiDetail, element: <MasyarakatEdukasiDetail /> }, // TAMBAHKAN
               { path: paths.masyarakatBuatLaporan, element: <MasyarakatBuatLaporan /> },
               { path: paths.masyarakatLacakLaporan, element: <MasyarakatLacakLaporan /> },
               { path: paths.masyarakatAjukanKunjungan, element: <MasyarakatAjukanKunjungan /> },
@@ -112,7 +113,6 @@ const routes: RouteObject[] = [
         ],
       },
       {
-        // Hapus ProtectedRoute untuk petugas
         children: [
           {
             path: rootPaths.petugasRoot,
@@ -139,5 +139,4 @@ const routes: RouteObject[] = [
 ];
 
 const router = createBrowserRouter(routes);
-
 export default router;

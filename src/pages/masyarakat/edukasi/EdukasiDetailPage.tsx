@@ -85,7 +85,7 @@ const EdukasiDetailPage: React.FC = () => {
         <Alert severity="error">{error || 'Konten tidak ditemukan.'}</Alert>
         <Button
           component={RouterLink}
-          to="/masyarakat/edukasi"
+          to="/masyarakat/edukasi/list"
           startIcon={<ArrowBackIcon />}
           sx={{ mt: 2 }}
         >
@@ -99,7 +99,7 @@ const EdukasiDetailPage: React.FC = () => {
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Button
         component={RouterLink}
-        to="/masyarakat/edukasi" // BENAR: ke halaman list
+        to="/masyarakat/edukasi/list" // BENAR: ke halaman list
         startIcon={<ArrowBackIcon />}
         sx={{ mb: 2 }}
       >

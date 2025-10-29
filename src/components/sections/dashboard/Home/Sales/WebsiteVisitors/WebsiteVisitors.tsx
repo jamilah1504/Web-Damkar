@@ -8,17 +8,17 @@ const WebsiteVisitors = (): ReactElement => {
   const theme = useTheme();
 
   const seriesData: PieDataItemOption[] = [
-    { value: 6840, name: 'Direct' },
-    { value: 3960, name: 'Organic' },
-    { value: 2160, name: 'Paid' },
-    { value: 5040, name: 'Social' },
+    { value: 6840, name: 'Perumahan' },
+    { value: 3960, name: 'Gedung' },
+    { value: 2160, name: 'Lahan' },
+    { value: 5040, name: 'Lain-lain' },
   ];
 
   const legendData = [
-    { name: 'Direct', icon: 'circle' },
-    { name: 'Organic', icon: 'circle' },
-    { name: 'Paid', icon: 'circle' },
-    { name: 'Social', icon: 'circle' },
+    { name: 'Perumahan', icon: 'circle' },
+    { name: 'Gedung', icon: 'circle' },
+    { name: 'Lahan', icon: 'circle' },
+    { name: 'Lain-lain', icon: 'circle' },
   ];
 
   const pieChartColors = [
@@ -39,10 +39,10 @@ const WebsiteVisitors = (): ReactElement => {
     }
   };
   const [visitorType, setVisitorType] = useState<any>({
-    Direct: false,
-    Organic: false,
-    Paid: false,
-    Social: false,
+    Perumahan: false,
+    Gedung: false,
+    Lahan: false,
+    Lain: false,
   });
 
   const toggleClicked = (name: string) => {
@@ -66,7 +66,7 @@ const WebsiteVisitors = (): ReactElement => {
       }}
     >
       <Typography variant="subtitle1" color="text.primary" p={2.5}>
-        Website Visitors
+        Kejadian Mingguan
       </Typography>
       <Stack direction={{ xs: 'column', sm: 'row', md: 'column' }}>
         <Stack direction="row" justifyContent="center" flex={'1 1 0%'}>

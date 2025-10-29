@@ -20,7 +20,7 @@ import { currencyFormat } from 'helpers/format-functions';
 const columns: GridColDef<DataRow>[] = [
   {
     field: 'id',
-    headerName: 'ID',
+    headerName: 'NO',
   },
   {
     field: 'product',
@@ -93,7 +93,6 @@ const TopSellingProduct = (): ReactElement => {
   const visibleColumns = useMemo(
     () =>
       columns
-        .filter((column) => column.field !== 'id')
         .map((column) => {
           if (column.field === 'refunds') {
             return {
@@ -137,7 +136,7 @@ const TopSellingProduct = (): ReactElement => {
         gap={3.75}
       >
         <Typography variant="h5" color="text.primary">
-          Top Selling Product
+          Tabel Lokasi Rawan
         </Typography>
         <TextField
           variant="filled"
@@ -169,11 +168,6 @@ const TopSellingProduct = (): ReactElement => {
           rowSelection={false}
           initialState={{
             pagination: { paginationModel: { pageSize: 5, page: 0 } },
-            columns: {
-              columnVisibilityModel: {
-                id: false,
-              },
-            },
           }}
           pageSizeOptions={[5]}
           onResize={() => {

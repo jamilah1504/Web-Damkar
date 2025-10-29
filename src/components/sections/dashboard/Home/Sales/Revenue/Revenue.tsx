@@ -8,11 +8,18 @@ const Revenue = (): ReactElement => {
   const theme = useTheme();
   const chartRef = useRef<EChartsReactCore | null>(null);
 
-  const lineChartColors = [theme.palette.secondary.main, theme.palette.primary.main];
+  const lineChartColors = [
+    theme.palette.secondary.main,
+    theme.palette.primary.main,
+    theme.palette.info.main,
+    theme.palette.success.main,
+  ];
 
   const legendData = [
-    { name: 'Google ads', icon: 'circle' },
-    { name: 'Facebook ads', icon: 'circle' },
+    { name: 'Harian', icon: 'circle' },
+    { name: 'Bulanan', icon: 'circle' },
+    { name: 'Triwulan', icon: 'circle' },
+    { name: 'Tahunan', icon: 'circle' },
   ];
 
   const seriesData: LineSeriesOption[] = [
@@ -22,7 +29,7 @@ const Revenue = (): ReactElement => {
       type: 'line',
       smooth: true,
       color: lineChartColors[0],
-      name: 'Google ads',
+      name: 'Harian',
       legendHoverLink: true,
       showSymbol: true,
       symbolSize: 12,
@@ -36,7 +43,35 @@ const Revenue = (): ReactElement => {
       type: 'line',
       smooth: true,
       color: lineChartColors[1],
-      name: 'Facebook ads',
+      name: 'Bulanan',
+      legendHoverLink: true,
+      showSymbol: false,
+      symbolSize: 12,
+      lineStyle: {
+        width: 5,
+      },
+    },
+    {
+      id: 3,
+      data: [40, 90, 100, 30, 80, 300, 90, 180],
+      type: 'line',
+      smooth: true,
+      color: lineChartColors[2],
+      name: 'Triwulan',
+      legendHoverLink: true,
+      showSymbol: false,
+      symbolSize: 12,
+      lineStyle: {
+        width: 5,
+      },
+    },
+    {
+      id: 4,
+      data: [20, 50, 100, 30, 20, 300, 30, 180],
+      type: 'line',
+      smooth: true,
+      color: lineChartColors[3],
+      name: 'Tahunan',
       legendHoverLink: true,
       showSymbol: false,
       symbolSize: 12,
@@ -57,8 +92,10 @@ const Revenue = (): ReactElement => {
   };
 
   const [revenueAdType, setRevenueAdType] = useState<any>({
-    'Google ads': false,
-    'Facebook ads': false,
+    'Harian': false,
+    'Bulanan': false,
+    'Triwulan': false,
+    'Tahunan': false,
   });
 
   const toggleClicked = (name: string) => {
@@ -85,7 +122,7 @@ const Revenue = (): ReactElement => {
         padding={3.75}
       >
         <Typography variant="h5" color="text.primary">
-          Revenue
+          Visualisasi Laporan Kebakaran
         </Typography>
         <Stack direction="row" gap={2}>
           {Array.isArray(seriesData) &&

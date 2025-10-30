@@ -1,7 +1,7 @@
-import avgRevenue from 'assets/sale-info/avg-revenue.png';
-import customers from 'assets/sale-info/customers.png';
-import sales from 'assets/sale-info/sales.png';
-import followers from 'assets/sale-info/followers.png';
+import warning from 'assets/sale-info/warning.png';
+import waktu from 'assets/sale-info/waktu.png';
+import insiden from 'assets/sale-info/insiden.png';
+import profile from 'assets/sale-info/profile.png';
 
 interface SaleInfoData {
   id: number;
@@ -15,7 +15,7 @@ interface SaleInfoData {
 export const saleInfoData: SaleInfoData[] = [
   {
     id: 1,
-    image: sales,
+    image: insiden,
     title: 'Insiden Hari Ini',
     sales: 230220,
     increment: 55,
@@ -23,7 +23,7 @@ export const saleInfoData: SaleInfoData[] = [
   },
   {
     id: 2,
-    image: customers,
+    image: waktu,
     title: 'Waktu Tanggapan',
     sales: 3200,
     increment: 12,
@@ -31,18 +31,18 @@ export const saleInfoData: SaleInfoData[] = [
   },
   {
     id: 3,
-    image: followers,
+    image: profile,
     title: 'Total Pengguna',
     sales: 2300,
-    increment: 210,
+    increment: 10,
     date: 'May 2022',
   },
   {
     id: 4,
-    image: avgRevenue,
+    image: warning,
     title: 'Peringatan Cepat',
     sales: 2300,
-    increment: 210,
+    increment: 5,
     date: 'May 2022',
   },
 ];

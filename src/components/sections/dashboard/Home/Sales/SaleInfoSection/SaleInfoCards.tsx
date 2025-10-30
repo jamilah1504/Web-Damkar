@@ -1,11 +1,19 @@
 import { Stack } from '@mui/material';
-import { saleInfoData } from 'data/sale-info-data';
 import SaleInfo from './SaleInfo';
 
-const SaleInfoCards = () => {
+type SaleInfoItem = {
+  id: number;
+  image: string;
+  title: string;
+  sales: number | string;
+  increment: number;
+  date: string;
+};
+
+const SaleInfoCards = ({ data }: { data: SaleInfoItem[] }) => {
   return (
     <Stack direction={{ sm: 'row' }} justifyContent={{ sm: 'space-between' }} gap={3.75}>
-      {saleInfoData.map((saleInfoDataItem) => (
+      {data.map((saleInfoDataItem) => (
         <SaleInfo
           key={saleInfoDataItem.id}
           title={saleInfoDataItem.title}

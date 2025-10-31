@@ -1,3 +1,4 @@
+import MasyarakatLayout from 'layouts/masyarakat-layout';
 import React, { useState, useEffect, useRef } from 'react';
 
 // Komponen utama untuk halaman Firewatch
@@ -123,7 +124,7 @@ const FirewatchPage: React.FC = () => {
 
 
   return (
-    <>
+    <MasyarakatLayout>
       {/* Semua CSS dari file asli disisipkan di sini */}
       <style>{`
         * {
@@ -764,31 +765,7 @@ const FirewatchPage: React.FC = () => {
       {/* Animated Background */}
       <div className="fire-particles" ref={particlesContainerRef}></div>
 
-      {/* Topbar */}
-      <header className="topbar">
-        <div className="logo">
-          🔥 FIREWATCH
-        </div>
-        <nav>
-          <ul className="nav-menu">
-            <li><a href="/auth/login">Login</a></li>
-            <li><a href="/auth/register">Register</a></li>
-            <li><a href="#how-it-works">Cara Kerja</a></li>
-            <li><a href="#contact">Kontak</a></li>
-          </ul>
-          {isMenuOpen && (
-            <ul className="nav-menu-mobile">
-                <li><a href="/auth/login" onClick={() => setIsMenuOpen(false)}>Login</a></li>
-                <li><a href="/auth/register" onClick={() => setIsMenuOpen(false)}>Register</a></li>
-                <li><a href="#how-it-works" onClick={() => setIsMenuOpen(false)}>Cara Kerja</a></li>
-                <li><a href="#contact" onClick={() => setIsMenuOpen(false)}>Kontak</a></li>
-            </ul>
-          )}
-        </nav>
-        <button className="menu-toggle" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-            {isMenuOpen ? '✕' : '☰'}
-        </button>
-      </header>
+      
 
       {/* Hero Section */}
       <section className="hero" id="home">
@@ -916,46 +893,7 @@ const FirewatchPage: React.FC = () => {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="footer" id="contact">
-        <div className="footer-content">
-          <div className="footer-section">
-            <h4>FIREWATCH</h4>
-            <p>Sistem pelaporan kebakaran terpercaya untuk Indonesia yang lebih aman.</p>
-          </div>
-          <div className="footer-section">
-            <h4>Layanan</h4>
-            <ul>
-              <li><a href="#">Pelaporan Darurat</a></li>
-              <li><a href="#">Monitoring Area</a></li>
-              <li><a href="#">Edukasi Kebakaran</a></li>
-              <li><a href="#">Konsultasi K3</a></li>
-            </ul>
-          </div>
-          <div className="footer-section">
-            <h4>Perusahaan</h4>
-            <ul>
-              <li><a href="#">Tentang Kami</a></li>
-              <li><a href="#">Tim Kami</a></li>
-              <li><a href="#">Karir</a></li>
-              <li><a href="#">Partner</a></li>
-            </ul>
-          </div>
-          <div className="footer-section">
-            <h4>Kontak</h4>
-            <ul>
-              <li>📞 Hotline: 119</li>
-              <li>📧 info@firewatch.id</li>
-              <li>📍 Jakarta, Indonesia</li>
-            </ul>
-          </div>
-        </div>
-        <div className="footer-bottom">
-          <p>&copy; 2024 FIREWATCH. All rights reserved.</p>
-        </div>
-      </footer>
-    </>
+    </MasyarakatLayout>
   );
 };
 

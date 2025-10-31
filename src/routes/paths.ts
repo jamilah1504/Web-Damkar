@@ -16,7 +16,7 @@ const paths = {
   // --- Path Admin ---
   adminDashboard: 'dashboard',
   adminLaporanMasuk: 'laporan/masuk',
-  adminLaporanRiwayat: 'laporan/riwayat',
+  adminLaporanPeriodik: 'laporan/laporan-periodik',
   adminJadwal: 'jadwal',
   adminPeta: 'peta',
   adminNotifikasi: 'notifikasi',
@@ -32,6 +32,7 @@ const paths = {
   // --- Path Masyarakat ---
   masyarakatDashboard: 'dashboard',
   masyarakatEdukasi: 'edukasi/list',
+  masyarakatEdukasiDetail: 'edukasi/detail/:id',
   masyarakatBuatLaporan: 'buat-laporan',
   masyarakatLacakLaporan: 'lacak-laporan',
   masyarakatAjukanKunjungan: 'ajukan-kunjungan',

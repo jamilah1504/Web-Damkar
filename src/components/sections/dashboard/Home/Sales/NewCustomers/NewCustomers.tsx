@@ -28,7 +28,7 @@ const NewCustomers = (): ReactElement => {
     >
       <Stack direction="row" justifyContent="space-between" alignItems="center" padding={2.5}>
         <Typography variant="subtitle1" color="text.primary">
-          New Customers
+          Petugas Aktif
         </Typography>
         <IconButton
           id="new-customers-button"

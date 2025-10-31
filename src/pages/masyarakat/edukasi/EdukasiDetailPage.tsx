@@ -1,3 +1,4 @@
+// src/pages/masyarakat/edukasi/EdukasiDetailPage.tsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, Link as RouterLink } from 'react-router-dom';
@@ -17,7 +18,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api', // Sesuaikan port
+  baseURL: 'http://localhost:5000/api',
 });
 
 interface EdukasiItem {
@@ -46,7 +47,7 @@ const isImageUrl = (url: string | null): boolean => {
 };
 
 const EdukasiDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>(); // Mengambil ID dari URL
+  const { id } = useParams<{ id: string }>();
   const [item, setItem] = useState<EdukasiItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -59,9 +60,9 @@ const EdukasiDetailPage: React.FC = () => {
       try {
         const response = await apiClient.get(`/edukasi/${id}`);
         setItem(response.data.data);
-      } catch (error) {
-        console.error('Gagal mengambil detail edukasi:', error);
-        setError('Gagal mengambil data dari server atau konten tidak ditemukan.');
+      } catch (error: any) {
+        console.error('Gagal mengambil detail:', error);
+        setError(error.response?.data?.message || 'Konten tidak ditemukan atau server error.');
       } finally {
         setLoading(false);
       }
@@ -78,26 +79,27 @@ const EdukasiDetailPage: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error || !item) {
     return (
       <Container sx={{ py: 4 }}>
-        <Alert severity="error">{error}</Alert>
-        <Button component={RouterLink} to="/edukasi" startIcon={<ArrowBackIcon />} sx={{ mt: 2 }}>
+        <Alert severity="error">{error || 'Konten tidak ditemukan.'}</Alert>
+        <Button
+          component={RouterLink}
+          to="/masyarakat/edukasi/list"
+          startIcon={<ArrowBackIcon />}
+          sx={{ mt: 2 }}
+        >
           Kembali ke Daftar
         </Button>
       </Container>
     );
   }
 
-  if (!item) {
-    return <Container sx={{ py: 4 }}>=</Container>;
-  }
-
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Button
         component={RouterLink}
-        to="/edukasi/EdukasiListPage"
+        to="/masyarakat/edukasi/list" // BENAR: ke halaman list
         startIcon={<ArrowBackIcon />}
         sx={{ mb: 2 }}
       >
@@ -116,7 +118,6 @@ const EdukasiDetailPage: React.FC = () => {
           </Typography>
         </Stack>
 
-        {/* Menampilkan Gambar atau Link File */}
         {item.fileUrl && (
           <Box sx={{ my: 3 }}>
             {isImageUrl(item.fileUrl) ? (
@@ -124,15 +125,9 @@ const EdukasiDetailPage: React.FC = () => {
                 component="img"
                 src={item.fileUrl}
                 alt={item.judul}
-                sx={{
-                  width: '100%',
-                  maxHeight: 450,
-                  objectFit: 'cover',
-                  borderRadius: 2,
-                }}
+                sx={{ width: '100%', maxHeight: 450, objectFit: 'cover', borderRadius: 2 }}
               />
             ) : (
-              // Jika file tapi bukan gambar (misal: PDF)
               <Button
                 component={MuiLink}
                 href={item.fileUrl}
@@ -147,16 +142,10 @@ const EdukasiDetailPage: React.FC = () => {
           </Box>
         )}
 
-        {/* Isi Konten Utama */}
         <Typography
           variant="body1"
           component="div"
-          sx={{
-            mt: 3,
-            lineHeight: 1.7,
-            fontSize: '1.1rem',
-            whiteSpace: 'pre-wrap', // Menjaga format line break dari admin
-          }}
+          sx={{ mt: 3, lineHeight: 1.7, fontSize: '1.1rem', whiteSpace: 'pre-wrap' }}
         >
           {item.isiKonten}
         </Typography>

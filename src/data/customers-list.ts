@@ -14,13 +14,13 @@ export const customerList: CustomerData[] = [
   {
     id: 1,
     name: 'Roselle Ehrman',
-    country: 'Brazil',
+    country: 'Petugas',
     avatar: roselle,
   },
   {
     id: 2,
     name: 'Jone Smith',
-    country: 'Australia',
+    country: 'Masyarakat',
     avatar: jone,
   },
   {

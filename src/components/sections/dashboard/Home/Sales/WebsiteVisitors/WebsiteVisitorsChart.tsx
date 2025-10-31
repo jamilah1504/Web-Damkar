@@ -33,7 +33,7 @@ const WebsiteVisitorsChart = ({
       },
       series: [
         {
-          name: 'Website Visitors',
+          name: 'Kejadian Mingguan',
           type: 'pie',
           radius: ['65%', '80%'],
           avoidLabelOverlap: true,

@@ -7,7 +7,7 @@ import { currencyFormat } from 'helpers/format-functions';
 type SaleInfoProps = {
   image?: string;
   title: string;
-  sales: number;
+  sales: number | string;
   increment: number;
   date?: string;
 };
@@ -47,7 +47,7 @@ const SaleInfo = ({ image, title, sales, increment, date }: SaleInfoProps): Reac
           </Typography>
         </Stack>
         <Typography variant="body1" component="p" color="text.secondary">
-          {currencyFormat(sales)}
+          {typeof sales === 'number' ? currencyFormat(sales) : sales}
         </Typography>
         <Typography
           variant="body2"

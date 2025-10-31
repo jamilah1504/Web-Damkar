@@ -36,6 +36,7 @@ const paths = {
   masyarakatBuatLaporan: 'buat-laporan',
   masyarakatLacakLaporan: 'lacak-laporan',
   masyarakatAjukanKunjungan: 'ajukan-kunjungan',
+  masyarakatFormulirLaporan: 'formulir-laporan',
 
   // --- Path Halaman Error ---
   unauthorized: '/unauthorized',

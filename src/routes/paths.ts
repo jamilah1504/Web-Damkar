@@ -10,8 +10,8 @@ const paths = {
   landing: '/',
 
   // --- Path Otentikasi ---
-  login: 'login',
-  register: 'register',
+  login: 'auth/login',
+  register: 'auth/register',
 
   // --- Path Admin ---
   adminDashboard: 'dashboard',

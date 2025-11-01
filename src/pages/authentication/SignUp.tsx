@@ -18,6 +18,7 @@ import IconifyIcon from 'components/base/IconifyIcon';
 import firesponseLogo from 'assets/logo/fireresponse-logo.png';
 import Image from 'components/base/Image';
 import authService from '../../services/authServices'; // 2. Import authService (sesuaikan pathnya)
+import paths, { rootPaths } from '../../routes/paths';
 
 const SignUp = (): ReactElement => {
   // 3. Tambahkan state untuk semua input, error, dan navigasi
@@ -38,7 +39,7 @@ const SignUp = (): ReactElement => {
     try {
       await authService.register({ name, email, password });
       // Jika registrasi berhasil, arahkan ke halaman login atau dashboard
-      navigate('/auth/login'); // Anda bisa juga arahkan ke '/dashboard'
+      navigate(`/${rootPaths.authRoot}/${paths.login}`); // Arahkan ke halaman login
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registrasi gagal. Silakan coba lagi.');
     }
@@ -160,7 +161,7 @@ const SignUp = (): ReactElement => {
           <Typography variant="body2" color="text.secondary">
             Already have an account ?{' '}
             <Link
-              href="/auth/login"
+              href={`/${rootPaths.authRoot}/${paths.login}`}
               underline="hover"
               fontSize={(theme) => theme.typography.body1.fontSize}
             >

@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom'; // 1. Impor Link dari React Router
 import { AppBar, Toolbar, Button, Box, Typography, IconButton } from '@mui/material';
 import { Home, Clock, Bell, LogIn, LogOut } from 'lucide-react';
@@ -30,7 +30,7 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
     localStorage.removeItem('user');
     setUser(null);
     // Arahkan ke halaman login menggunakan path yang benar
-    window.location.href = paths.login;
+    window.location.href = `/${rootPaths.authRoot}/${paths.login}`;
   };
 
   return (
@@ -115,7 +115,7 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
               // --- PERBAIKAN 4: Tombol Login ---
               <Button
                 component={RouterLink}
-                to={paths.login} // Mengarah ke /auth/login
+                to={`/${rootPaths.authRoot}/${paths.login}`} // Mengarah ke /auth/login
                 variant="contained"
                 startIcon={<LogIn size={18} />}
                 sx={{

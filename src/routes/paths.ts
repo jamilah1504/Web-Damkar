@@ -35,6 +35,7 @@ const paths = {
   masyarakatEdukasiDetail: 'edukasi/detail/:id',
   masyarakatBuatLaporan: 'buat-laporan',
   masyarakatLacakLaporan: 'lacak-laporan',
+  masyarakatDetailLaporan: `laporan/detail/:id`,
   masyarakatAjukanKunjungan: 'ajukan-kunjungan',
   masyarakatFormulirLaporan: 'formulir-laporan',
 

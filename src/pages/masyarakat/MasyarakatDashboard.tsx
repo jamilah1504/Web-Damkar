@@ -27,9 +27,7 @@ const Sales = (): ReactElement => {
         pl: { xs: 3.75, lg: 0 },
       }}
     >
-      <Grid xs={12}>
-        <SaleInfoCards />
-      </Grid>
+      <Grid xs={12}>{/* <SaleInfoCards /> */}</Grid>
       <Grid xs={12} md={8}>
         <Revenue />
       </Grid>

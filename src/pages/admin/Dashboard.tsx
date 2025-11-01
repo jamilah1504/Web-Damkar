@@ -26,19 +26,75 @@ const Sales = (): ReactElement => {
         const { users, laporan, insiden, lokasiRawan } = res.data.totalCounts;
         const date = new Date().toLocaleString('id-ID', { month: 'long', year: 'numeric' });
         setCardsData([
-          { id: 1, image: insidenPng as any, title: 'Insiden Hari Ini', sales: insiden, increment: 0, date },
-          { id: 2, image: waktuTanggapPng as any, title: 'Waktu Tanggap', sales: laporan, increment: 0, date },
-          { id: 3, image: usersPng as any, title: 'Total Pengguna', sales: users, increment: 0, date },
-          { id: 4, image: peringatanCepatPng as any, title: 'Peringatan Cepat', sales: lokasiRawan, increment: 0, date },
+          {
+            id: 1,
+            image: insidenPng as any,
+            title: 'Insiden Hari Ini',
+            sales: insiden,
+            increment: 0,
+            date,
+          },
+          {
+            id: 2,
+            image: waktuTanggapPng as any,
+            title: 'Waktu Tanggap',
+            sales: laporan,
+            increment: 0,
+            date,
+          },
+          {
+            id: 3,
+            image: usersPng as any,
+            title: 'Total Pengguna',
+            sales: users,
+            increment: 0,
+            date,
+          },
+          {
+            id: 4,
+            image: peringatanCepatPng as any,
+            title: 'Peringatan Cepat',
+            sales: lokasiRawan,
+            increment: 0,
+            date,
+          },
         ]);
       } catch (e) {
         const date = new Date().toLocaleString('id-ID', { month: 'long', year: 'numeric' });
         const msg = 'Gagal mengambil data';
         setCardsData([
-          { id: 1, image: insidenPng as any, title: 'Insiden Hari Ini', sales: msg, increment: 0, date },
-          { id: 2, image: waktuTanggapPng as any, title: 'Waktu Tanggap', sales: msg, increment: 0, date },
-          { id: 3, image: usersPng as any, title: 'Total Pengguna', sales: msg, increment: 0, date },
-          { id: 4, image: peringatanCepatPng as any, title: 'Peringatan Cepat', sales: msg, increment: 0, date },
+          {
+            id: 1,
+            image: insidenPng as any,
+            title: 'Insiden Hari Ini',
+            sales: msg,
+            increment: 0,
+            date,
+          },
+          {
+            id: 2,
+            image: waktuTanggapPng as any,
+            title: 'Waktu Tanggap',
+            sales: msg,
+            increment: 0,
+            date,
+          },
+          {
+            id: 3,
+            image: usersPng as any,
+            title: 'Total Pengguna',
+            sales: msg,
+            increment: 0,
+            date,
+          },
+          {
+            id: 4,
+            image: peringatanCepatPng as any,
+            title: 'Peringatan Cepat',
+            sales: msg,
+            increment: 0,
+            date,
+          },
         ]);
       }
     })();

@@ -1,5 +1,4 @@
 import Grid from '@mui/material/Unstable_Grid2';
-import { Stack } from '@mui/material';
 import { ReactElement, useEffect, useState } from 'react';
 
 import TopSellingProduct from 'components/sections/dashboard/Home/Sales/TopSellingProduct/TopSellingProduct';
@@ -147,15 +146,10 @@ const Sales = (): ReactElement => {
         <TopSellingProduct />
       </Grid>
       <Grid xs={12} lg={4}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row', lg: 'column' }}
-          gap={3.75}
-          height={1}
-          width={1}
-        >
-          <NewCustomers />
-          <MapCard />
-        </Stack>
+        <NewCustomers />
+      </Grid>
+      <Grid xs={12}>
+        <MapCard />
       </Grid>
     </Grid>
   );

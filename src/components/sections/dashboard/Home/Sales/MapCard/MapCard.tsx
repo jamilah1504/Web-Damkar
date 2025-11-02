@@ -29,8 +29,7 @@ const MapCard = (): ReactElement => {
         bgcolor: 'common.white',
         borderRadius: 5,
         height: 1,
-        flex: '1 1 auto',
-        width: { xs: 'auto', sm: 0.5, lg: 'auto' },
+        width: 1,
         boxShadow: (theme) => theme.shadows[4],
       }}
     >
@@ -93,7 +92,7 @@ const MapCard = (): ReactElement => {
             position: 'relative',
             overflow: 'hidden',
             borderRadius: 2,
-            minHeight: 200,
+            minHeight: 400,
           }}
         >
           {/* Map Container */}

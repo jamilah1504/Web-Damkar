@@ -5,7 +5,7 @@ import { ReactElement, useEffect, useState } from 'react';
 import TopSellingProduct from 'components/sections/dashboard/Home/Sales/TopSellingProduct/TopSellingProduct';
 import WebsiteVisitors from 'components/sections/dashboard/Home/Sales/WebsiteVisitors/WebsiteVisitors';
 import SaleInfoCards from 'components/sections/dashboard/Home/Sales/SaleInfoSection/SaleInfoCards';
-import BuyersProfile from 'components/sections/dashboard/Home/Sales/BuyersProfile/BuyersProfile';
+import MapCard from 'components/sections/dashboard/Home/Sales/MapCard/MapCard';
 import NewCustomers from 'components/sections/dashboard/Home/Sales/NewCustomers/NewCustomers';
 import Revenue from 'components/sections/dashboard/Home/Sales/Revenue/Revenue';
 
@@ -23,14 +23,69 @@ const Sales = (): ReactElement => {
     (async () => {
       try {
         const res = await getDashboardStats();
-        const { users, laporan, insiden, lokasiRawan } = res.data.totalCounts;
+        console.log('Dashboard stats response:', res);
+        
+        if (res && res.data && res.data.totalCounts) {
+          const { users, laporan, insiden, lokasiRawan } = res.data.totalCounts;
+          const date = new Date().toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+          setCardsData([
+            {
+              id: 1,
+              image: insidenPng as any,
+              title: 'Insiden Hari Ini',
+              sales: insiden || 0,
+              increment: 0,
+              date,
+            },
+            {
+              id: 2,
+              image: waktuTanggapPng as any,
+              title: 'Waktu Tanggap',
+              sales: laporan || 0,
+              increment: 0,
+              date,
+            },
+            {
+              id: 3,
+              image: usersPng as any,
+              title: 'Total Pengguna',
+              sales: users || 0,
+              increment: 0,
+              date,
+            },
+            {
+              id: 4,
+              image: peringatanCepatPng as any,
+              title: 'Peringatan Cepat',
+              sales: lokasiRawan || 0,
+              increment: 0,
+              date,
+            },
+          ]);
+        } else {
+          throw new Error('Invalid response structure');
+        }
+      } catch (e: any) {
+        console.error('Error fetching dashboard stats:', e);
+        console.error('Error details:', {
+          message: e.message,
+          response: e.response?.data,
+          status: e.response?.status,
+        });
+        
         const date = new Date().toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+        const errorMsg = e.response?.status === 403 
+          ? 'Akses ditolak' 
+          : e.response?.status === 401 
+          ? 'Tidak terautentikasi'
+          : e.response?.data?.message || 'Gagal mengambil data';
+        
         setCardsData([
           {
             id: 1,
             image: insidenPng as any,
             title: 'Insiden Hari Ini',
-            sales: insiden,
+            sales: errorMsg,
             increment: 0,
             date,
           },
@@ -38,7 +93,7 @@ const Sales = (): ReactElement => {
             id: 2,
             image: waktuTanggapPng as any,
             title: 'Waktu Tanggap',
-            sales: laporan,
+            sales: errorMsg,
             increment: 0,
             date,
           },
@@ -46,7 +101,7 @@ const Sales = (): ReactElement => {
             id: 3,
             image: usersPng as any,
             title: 'Total Pengguna',
-            sales: users,
+            sales: errorMsg,
             increment: 0,
             date,
           },
@@ -54,44 +109,7 @@ const Sales = (): ReactElement => {
             id: 4,
             image: peringatanCepatPng as any,
             title: 'Peringatan Cepat',
-            sales: lokasiRawan,
-            increment: 0,
-            date,
-          },
-        ]);
-      } catch (e) {
-        const date = new Date().toLocaleString('id-ID', { month: 'long', year: 'numeric' });
-        const msg = 'Gagal mengambil data';
-        setCardsData([
-          {
-            id: 1,
-            image: insidenPng as any,
-            title: 'Insiden Hari Ini',
-            sales: msg,
-            increment: 0,
-            date,
-          },
-          {
-            id: 2,
-            image: waktuTanggapPng as any,
-            title: 'Waktu Tanggap',
-            sales: msg,
-            increment: 0,
-            date,
-          },
-          {
-            id: 3,
-            image: usersPng as any,
-            title: 'Total Pengguna',
-            sales: msg,
-            increment: 0,
-            date,
-          },
-          {
-            id: 4,
-            image: peringatanCepatPng as any,
-            title: 'Peringatan Cepat',
-            sales: msg,
+            sales: errorMsg,
             increment: 0,
             date,
           },
@@ -136,7 +154,7 @@ const Sales = (): ReactElement => {
           width={1}
         >
           <NewCustomers />
-          <BuyersProfile />
+          <MapCard />
         </Stack>
       </Grid>
     </Grid>

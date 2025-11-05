@@ -13,7 +13,7 @@ type SaleInfoItem = {
 const SaleInfoCards = ({ data }: { data: SaleInfoItem[] }) => {
   return (
     <Stack direction={{ sm: 'row' }} justifyContent={{ sm: 'space-between' }} gap={3.75}>
-      {data.map((saleInfoDataItem) => (
+      {data && data.map((saleInfoDataItem) => (
         <SaleInfo
           key={saleInfoDataItem.id}
           title={saleInfoDataItem.title}

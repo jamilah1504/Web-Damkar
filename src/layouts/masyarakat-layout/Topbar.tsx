@@ -30,6 +30,8 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
   // 4. Buat fungsi handleLogout di dalam komponen
   const handleLogout = () => {
     localStorage.removeItem('user'); // Hapus data dari localStorage
+    localStorage.removeItem('token'); // Hapus data dari localStorage
+    localStorage.removeItem('role'); // Hapus data dari localStorage
     setUser(null); // Set state user menjadi null
     window.location.href = '/auth/login'; // Arahkan kembali ke halaman login
   };

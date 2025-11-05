@@ -8,13 +8,12 @@ import {
   Stack,
   TextField,
   Toolbar,
-  Typography,
 } from '@mui/material';
 import IconifyIcon from 'components/base/IconifyIcon';
 import { drawerWidth } from 'layouts/main-layout';
 
-import { useLocation } from 'react-router-dom';
-import capitalizePathname from 'helpers/capitalize-pathname';
+// import { useLocation } from 'react-router-dom';
+// import capitalizePathname from 'helpers/capitalize-pathname';
 import AccountDropdown from './AccountDropdown';
 //import LanguageDropdown from './LanguageDropdown';
 import Image from 'components/base/Image';
@@ -25,8 +24,8 @@ interface TopbarProps {
 }
 
 const Topbar = ({ handleDrawerToggle }: TopbarProps): ReactElement => {
-  const { pathname } = useLocation();
-  const title = capitalizePathname(pathname);
+  // const { pathname } = useLocation();
+  // const title = capitalizePathname(pathname);
 
   return (
     <AppBar

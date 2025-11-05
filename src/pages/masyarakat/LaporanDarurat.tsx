@@ -1,209 +1,503 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Camera, Video, MapPin } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft,
+  Camera,
+  Video,
+  MapPin,
+  X,
+} from 'lucide-react';
+
+// (BARU) Impor ReactDOMServer untuk mengubah React ke HTML
+import ReactDOMServer from 'react-dom/server';
+
+// 1. Impor React Leaflet dan CSS-nya
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import api from '../../api';
+import NotificationPopup from '../../components/NotificationPopup';
+
+// --- Perbaikan Ikon Leaflet ---
+import iconMarker from 'leaflet/dist/images/marker-icon.png';
+import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+L.Icon.Default.mergeOptions({
+  iconUrl: iconMarker,
+  iconRetinaUrl: iconRetina,
+  shadowUrl: iconShadow,
+});
+// --- Akhir Perbaikan Ikon ---
+
+interface LaporanData {
+  namaPelapor: string;
+  jenisKejadian: string;
+  detailKejadian: string;
+  alamatKejadian: string;
+  latitude: number | null;
+  longitude: number | null;
+  dokumen: File[];
+}
+
 interface FormDataState {
   namaPelapor: string;
   jenisKejadian: string;
   detailKejadian: string;
   alamatKejadian: string;
 }
+interface LocationState {
+  lat: number | null;
+  long: number | null;
+}
+interface MediaPreviewProps {
+  file: File;
+  onRemove: () => void;
+}
+type NotificationStatus = 'success' | 'error' | 'pending' | null;
 
+export const submitLaporan = async (data: LaporanData) => {
+  // Validasi sederhana di sisi klien
+  if (!data.latitude || !data.longitude) {
+    throw new Error('Lokasi (Latitude/Longitude) wajib diisi.');
+  }
+  if (!data.namaPelapor || !data.jenisKejadian || !data.alamatKejadian) {
+    throw new Error('Nama, Jenis Kejadian, dan Alamat wajib diisi.');
+  }
+
+  const formData = new FormData();
+  formData.append('namaPelapor', data.namaPelapor);
+  formData.append('jenisKejadian', data.jenisKejadian);
+  formData.append('detailKejadian', data.detailKejadian);
+  formData.append('alamatKejadian', data.alamatKejadian);
+  formData.append('latitude', String(data.latitude));
+  formData.append('longitude', String(data.longitude));
+
+  if (data.dokumen && data.dokumen.length > 0) {
+    data.dokumen.forEach((file) => {
+      formData.append('dokumen', file);
+    });
+  }
+
+  // Kirim data
+  return await api.post('/reports', formData);
+};
+
+const MediaPreview: React.FC<MediaPreviewProps> = ({ file, onRemove }) => {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
+  if (!previewUrl) return null;
+  return (
+    <div className="media-preview">
+      {file.type.startsWith('image/') ? (
+        <img src={previewUrl} alt={file.name} />
+      ) : (
+        <video src={previewUrl} controls />
+      )}
+      <button
+        onClick={onRemove}
+        className="media-remove-button"
+        aria-label="Hapus file"
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+};
+
+function MapController({ location }: { location: LocationState }) {
+  const map = useMap();
+  useEffect(() => {
+    if (location.lat && location.long) {
+      map.flyTo([location.lat, location.long], 16);
+    }
+  }, [location, map]);
+  return null;
+}
+
+// --- (DIUBAH) Komponen DraggableMarker ---
+function DraggableMarker({
+  location,
+  setLocation,
+  setMapAddress,
+}: {
+  location: LocationState;
+  setLocation: React.Dispatch<React.SetStateAction<LocationState>>;
+  setMapAddress: React.Dispatch<React.SetStateAction<string>>;
+}) {
+  const markerRef = useRef<L.Marker>(null);
+
+  // (BARU) Buat ikon kustom dari Lucide
+  const lucideIcon = L.divIcon({
+    html: ReactDOMServer.renderToString(
+      // Render komponen MapPin dari Lucide ke string HTML
+      // Kita tambahkan kelas CSS agar bisa di-style (opsional)
+      // Anda juga bisa memberi warna: color="#c0392b"
+      <MapPin size={36} className="map-pin-icon" />
+    ),
+    className: 'leaflet-lucide-icon', // Kelas wrapper untuk L.DivIcon
+    iconSize: [36, 36], // Sesuaikan ukuran
+    iconAnchor: [18, 36], // Titik ujung pin (tengah-bawah)
+  });
+
+  const eventHandlers = useMemo(
+    () => ({
+      dragend() {
+        const marker = markerRef.current;
+        if (marker != null) {
+          const newPos = marker.getLatLng();
+          setLocation({ lat: newPos.lat, long: newPos.lng });
+          setMapAddress(`Lokasi Diatur: ${newPos.lat.toFixed(4)}, ${newPos.lng.toFixed(4)}`);
+        }
+      },
+    }),
+    [setLocation, setMapAddress]
+  );
+
+  if (!location.lat || !location.long) return null;
+
+  return (
+    <Marker
+      draggable={true}
+      eventHandlers={eventHandlers}
+      position={[location.lat, location.long]}
+      ref={markerRef}
+      icon={lucideIcon} // <-- (DIUBAH) Gunakan ikon kustom Lucide
+    />
+  );
+}
+
+// --- Komponen Form Utama ---
 export default function LaporanKejadianForm(): JSX.Element {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState<FormDataState>({
     namaPelapor: '',
     jenisKejadian: '',
     detailKejadian: '',
-    alamatKejadian: ''
+    alamatKejadian: '',
   });
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const MAX_FILES = 5;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const [location, setLocation] = useState<LocationState>({ lat: -6.5522, long: 107.7587 });
+  const [mapAddress, setMapAddress] = useState<string>('Mencari lokasi...');
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const [notification, setNotification] = useState<{
+    status: NotificationStatus;
+    message: string;
+  }>({ status: null, message: '' });
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  const handleSubmit = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleGetLocation = () => {
+    setIsLocating(true);
+    setMapAddress('Mendapatkan lokasi GPS...');
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setLocation({ lat: latitude, long: longitude });
+          setMapAddress(`Lokasi GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          setIsLocating(false);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          setMapAddress('Gagal mendapatkan lokasi GPS.');
+          setIsLocating(false);
+          setNotification({
+            status: 'error',
+            message: 'Gagal mendapatkan lokasi: ' + error.message,
+          });
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      setNotification({
+        status: 'error',
+        message: 'Geolocation tidak didukung oleh browser ini.',
+      });
+      setMapAddress('Geolocation tidak didukung.');
+      setIsLocating(false);
+
+
+    }
+  };
+
+  useEffect(() => {
+    handleGetLocation();
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newFiles = Array.from(files);
+      const totalFiles = mediaFiles.length + newFiles.length;
+      if (totalFiles > MAX_FILES) {
+        setNotification({
+          status: 'error',
+          message: `Anda hanya dapat mengupload maksimal ${MAX_FILES} file.`,
+        });
+        const allowedNewFiles = newFiles.slice(0, MAX_FILES - mediaFiles.length);
+        setMediaFiles((prev) => [...prev, ...allowedNewFiles]);
+      } else {
+        setMediaFiles((prev) => [...prev, ...newFiles]);
+      }
+    }
+    if (e.target) e.target.value = '';
+  };
+
+  const openFilePicker = (options: {
+    accept: string;
+    capture?: 'environment' | false;
+  }) => {
+    if (mediaFiles.length >= MAX_FILES) {
+      setNotification({
+        status: 'error',
+        message: `Anda sudah mencapai batas maksimal ${MAX_FILES} file.`,
+      });
+      return;
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = options.accept;
+      if (options.capture) {
+        fileInputRef.current.setAttribute('capture', String(options.capture));
+      } else {
+        fileInputRef.current.removeAttribute('capture');
+      }
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleRemoveMedia = (index: number) => {
+    setMediaFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    alert('Laporan berhasil diajukan!');
+    setIsSubmitting(true);
+
+    const laporanData: LaporanData = {
+      ...formData,
+      latitude: location.lat,
+      longitude: location.long,
+      dokumen: mediaFiles,
+    };
+
+    try {
+      await submitLaporan(laporanData);
+      setNotification({
+        status: 'success',
+        message: 'Laporan Anda telah berhasil diajukan. Petugas akan segera merespons.',
+      });
+    } catch (error) {
+      console.error('Gagal mengirim laporan:', error);
+      let errorMessage = 'Gagal mengirim laporan. Silakan coba lagi.';
+      if (error.response && error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+
+      } else if (error instanceof Error) {
+          // Cadangan jika bukan error Axios
+          errorMessage = error.message;
+      }
+      setNotification({
+        status: 'error',
+        message: errorMessage,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCloseNotification = () => {
+    // Jika statusnya sukses, navigasi kembali SETELAH ditutup
+    if (notification.status === 'success') {
+      navigate(-1);
+    }
+    // Reset notifikasi
+    setNotification({ status: null, message: '' });
   };
 
   return (
-      <main className="main-content">
-        <div className="title-bar">
-          <button className="back-button">
-            <ArrowLeft size={24} />
+    <main className="laporan-form-container">
+      {notification.status && (
+        <NotificationPopup
+          status={notification.status}
+          message={notification.message}
+          onClose={handleCloseNotification}
+        />
+      )}
+      {/* --- Title Bar --- */}
+      <div className="title-bar">
+        <button onClick={() => navigate(-1)} className="back-button" disabled={isSubmitting}>
+          <ArrowLeft size={24} />
+        </button>
+        <h2 className="page-title">Laporan Kejadian</h2>
+      </div>
+
+      <form onSubmit={(e) => e.preventDefault()} className="form-grid">
+        {/* --- Kolom Kiri - Form Input --- */}
+        <div className="form-column">
+          <input
+            type="text"
+            name="namaPelapor"
+            placeholder="Nama Pelapor"
+            value={formData.namaPelapor}
+            onChange={handleInputChange}
+            className="form-input"
+            disabled={isSubmitting}
+          />
+          <select
+            name="jenisKejadian"
+            value={formData.jenisKejadian}
+            onChange={handleInputChange}
+            className="form-input"
+            disabled={isSubmitting}
+          >
+            <option value="">Jenis Kejadian</option>
+            <option value="kebakaran">Kebakaran</option>
+            <option value="bencana">Bencana Alam</option>
+            <option value="kecelakaan">Kecelakaan</option>
+            <option value="lainnya">Lainnya</option>
+          </select>
+          <textarea
+            name="detailKejadian"
+            placeholder="Detail Kejadian"
+            value={formData.detailKejadian}
+            onChange={handleInputChange}
+            rows={4}
+            className="form-textarea"
+            disabled={isSubmitting}
+          />
+          <textarea
+            name="alamatKejadian"
+            placeholder="Alamat Kejadian (Detail)"
+            value={formData.alamatKejadian}
+            onChange={handleInputChange}
+            rows={4}
+            className="form-textarea"
+            disabled={isSubmitting}
+          />
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className="button-submit"
+            disabled={isSubmitting || isLocating}
+          >
+            {isSubmitting ? 'Mengirim Laporan...' : 'Ajukan Laporan'}
           </button>
-          <h2 className="page-title">Laporan Kejadian</h2>
         </div>
 
-        <form onSubmit={(e) => e.preventDefault()} className="form-grid">
-          {/* Left Column - Form */}
-          <div className="form-column">
+        {/* --- Kolom Kanan - Upload & Map --- */}
+        <div className="form-column">
+          <div className="card">
+            <h3 className="card-title">Upload Dokumentasi (Maks. 5)</h3>
             <input
-              type="text"
-              name="namaPelapor"
-              placeholder="Nama Pelapor"
-              value={formData.namaPelapor}
-              onChange={handleInputChange}
-              className="form-input"
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden-file-input"
+              multiple
+              disabled={isSubmitting}
             />
-            <select
-              name="jenisKejadian"
-              value={formData.jenisKejadian}
-              onChange={handleInputChange}
-              className="form-input"
-            >
-              <option value="">Jenis Kejadian</option>
-              <option value="kebakaran">Kebakaran</option>
-              <option value="bencana">Bencana Alam</option>
-              <option value="kecelakaan">Kecelakaan</option>
-              <option value="lainnya">Lainnya</option>
-            </select>
-            <textarea
-              name="detailKejadian"
-              placeholder="Detail Kejadian"
-              value={formData.detailKejadian}
-              onChange={handleInputChange}
-              rows={4}
-              className="form-textarea"
-            />
-            <textarea
-              name="alamatKejadian"
-              placeholder="Alamat Kejadian"
-              value={formData.alamatKejadian}
-              onChange={handleInputChange}
-              rows={4}
-              className="form-textarea"
-            />
-            <button
-              type="button"
-              onClick={handleSubmit}
-              className="button-submit"
-            >
-              Ajukan Laporan
-            </button>
+            <div className="upload-grid">
+              <button
+                type="button"
+                onClick={() => openFilePicker({ accept: 'image/*', capture: 'environment' })}
+                className="upload-button"
+                disabled={mediaFiles.length >= MAX_FILES || isSubmitting}
+              >
+                <Camera size={32} className="upload-icon" />
+                <span className="upload-text">Foto</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => openFilePicker({ accept: 'video/*', capture: 'environment' })}
+                className="upload-button"
+                disabled={mediaFiles.length >= MAX_FILES || isSubmitting}
+              >
+                <Video size={32} className="upload-icon" />
+                <span className="upload-text">Video</span>
+              </button>
+            </div>
+            {mediaFiles.length > 0 && (
+              <div className="preview-grid">
+                {mediaFiles.map((file, index) => (
+                  <MediaPreview
+                    key={index}
+                    file={file}
+                    onRemove={() => !isSubmitting && handleRemoveMedia(index)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Right Column - Upload & Map */}
-          <div className="form-column">
-            <div className="card">
-              <h3 className="card-title">Upload dokumentasi</h3>
-              <div className="upload-grid">
-                <button className="upload-button">
-                  <Camera size={40} className="upload-icon" />
-                  <span className="upload-text">Foto</span>
-                </button>
-                <button className="upload-button">
-                  <Video size={40} className="upload-icon" />
-                  <span className="upload-text">Video</span>
-                </button>
+          <div className="card">
+            <div className="map-header">
+              <div>
+                <h3 className="card-title-flex">
+                  Pilih Lokasi
+                  <MapPin size={16} />
+                </h3>
+                <p className="map-address">{mapAddress}</p>
               </div>
+              <button
+                onClick={handleGetLocation}
+                className="button-change-location"
+                disabled={isLocating || isSubmitting}
+              >
+                {isLocating ? 'Mencari...' : 'Reset GPS'}
+              </button>
             </div>
-            <div className="card">
-              <div className="map-header">
-                <div>
-                  <h3 className="card-title-flex">
-                    Pilih Lokasi
-                    <MapPin size={16} className="map-pin-icon-small" />
-                  </h3>
-                  <p className="map-address">Cibogo RT 19, Subang</p>
+
+            <div className="map-container">
+              {location.lat && location.long ? (
+                <MapContainer
+                  className="map-leaflet-container"
+                  center={[location.lat, location.long]}
+                  zoom={16}
+                  dragging={!isSubmitting}
+                  touchZoom={!isSubmitting}
+                  scrollWheelZoom={!isSubmitting}
+                  doubleClickZoom={!isSubmitting}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <DraggableMarker
+                    location={location}
+                    setLocation={setLocation}
+                    setMapAddress={setMapAddress}
+                  />
+                  <MapController location={location} />
+                </MapContainer>
+              ) : (
+                <div className="map-loading">
+                  {isLocating ? 'Mencari lokasi...' : mapAddress}
                 </div>
-                <button className="button-change-location">
-                  Ubah
-                </button>
-              </div>
-              <div className="map-container">
-                 {/* ... Konten peta tetap sama ... */}
-                 {/* Map Location */}
-
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-
-                <div className="flex items-start justify-between mb-3">
-
-                    <div>
-
-                    <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-
-                        Pilih Lokasi
-
-                        <MapPin size={16} className="text-gray-500" />
-
-                    </h3>
-
-                    <p className="text-sm text-gray-500 mt-1">Cibogo RT 19, Subang</p>
-
-                    </div>
-
-                    <button className="bg-yellow-400 text-gray-800 px-4 py-1 rounded-full text-sm font-semibold hover:bg-yellow-500">
-
-                    Ubah
-
-                    </button>
-
-                </div>
-
-                
-
-                <div className="w-full h-64 bg-green-100 rounded-lg overflow-hidden relative">
-
-                    <div className="absolute inset-0 bg-gradient-to-br from-green-200 via-green-100 to-blue-100">
-
-                    {/* Simulated Map Roads */}
-
-                    <svg className="w-full h-full opacity-30">
-
-                        <line x1="0" y1="100" x2="400" y2="100" stroke="#888" strokeWidth="2"/>
-
-                        <line x1="0" y1="150" x2="400" y2="150" stroke="#888" strokeWidth="2"/>
-
-                        <line x1="150" y1="0" x2="150" y2="300" stroke="#888" strokeWidth="2"/>
-
-                        <line x1="250" y1="0" x2="250" y2="300" stroke="#888" strokeWidth="2"/>
-
-                    </svg>
-
-                    
-
-                    {/* Location Marker */}
-
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-full">
-
-                        <MapPin size={36} className="text-red-600 fill-red-600 drop-shadow-lg" />
-
-                    </div>
-
-                    
-
-                    {/* Small markers */}
-
-                    <div className="absolute top-1/4 left-1/4">
-
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-
-                    </div>
-
-                    <div className="absolute top-3/4 right-1/4">
-
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-
-                    </div>
-
-                    <div className="absolute top-1/2 right-1/3">
-
-                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-
-                    </div>
-
-                    </div>
-
-                </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
-        </form>
-      </main>
+        </div>
+      </form>
+    </main>
   );
 }

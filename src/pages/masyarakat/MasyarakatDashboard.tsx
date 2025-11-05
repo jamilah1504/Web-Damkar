@@ -1,57 +1,131 @@
-import Grid from '@mui/material/Unstable_Grid2';
-import { Stack } from '@mui/material';
-import { ReactElement } from 'react';
+// PERBAIKAN 3: Impor 'SyntheticEvent'
+import React, { SyntheticEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-import TopSellingProduct from 'components/sections/dashboard/Home/Sales/TopSellingProduct/TopSellingProduct';
-import WebsiteVisitors from 'components/sections/dashboard/Home/Sales/WebsiteVisitors/WebsiteVisitors';
-import SaleInfoCards from 'components/sections/dashboard/Home/Sales/SaleInfoSection/SaleInfoCards';
-import BuyersProfile from 'components/sections/dashboard/Home/Sales/BuyersProfile/BuyersProfile';
-import NewCustomers from 'components/sections/dashboard/Home/Sales/NewCustomers/NewCustomers';
-import Revenue from 'components/sections/dashboard/Home/Sales/Revenue/Revenue';
+// 1. Impor ikon dari Lucide React
+import {
+  Shield,
+  Mic,
+  Keyboard,
+  Phone,
+  Flame,
+  HelpCircle,
+  BarChart,
+  Book,
+  School,
+  Contact, // PERBAIKAN 4: Menggunakan 'Contacts' (jamak)
+} from 'lucide-react';
 
-import { drawerWidth } from 'layouts/main-layout';
 
-const Sales = (): ReactElement => {
+// PERBAIKAN 2: Hapus impor gambar dari 'public' (sudah benar)
+
+// --- Komponen Pengganti _buildServiceButton ---
+interface ServiceButtonProps {
+  icon: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+}
+
+const ServiceButton: React.FC<ServiceButtonProps> = ({
+  icon,
+  label,
+  onClick,
+}) => (
+  <button onClick={onClick} className="service-button">
+    {icon}
+    <span className="service-button-label">{label}</span>
+  </button>
+);
+
+// --- Komponen Pengganti _buildLaporSection ---
+const LaporSection: React.FC = () => (
+  <section className="lapor-section">
+    <button className="lapor-button-main">
+      <div className="lapor-button-inner">
+        <Mic size={40} />
+        <span className="lapor-button-text">LAPOR</span>
+      </div>
+    </button>
+
+    <div className="lapor-options-container">
+      <button className="lapor-option-button"
+        onClick={() => { window.location.href = '/masyarakat/formulir-laporan'; }}
+      >
+        <Keyboard size={20} />
+        <span>Lapor Via Teks</span>
+      </button>
+      <button className="lapor-option-button">
+        <Phone size={20} />
+        <span>Telepon</span>
+      </button>
+    </div>
+  </section>
+);
+
+// --- Komponen Pengganti _buildLayananSection ---
+const LayananSection: React.FC = () => (
+  <section className="layanan-section">
+    <h2 className="layanan-title">Layanan</h2>
+    <div className="layanan-grid">
+      <ServiceButton icon={<Flame size={30} />} label={'Lapor\nKebakaran'} />
+      <ServiceButton
+        icon={<HelpCircle size={30} />}
+        label={'Lapor Non\nKebakaran'}
+      />
+      <ServiceButton
+        icon={<BarChart size={30} />}
+        label={'Grafik\nKejadian'}
+      />
+      <ServiceButton icon={<Book size={30} />} label={'Daftar\nKunjungan'} />
+      <ServiceButton icon={<School size={30} />} label={'Edukasi\nPublik'} />
+      <ServiceButton
+        icon={<Contact size={30} />} // PERBAIKAN 4 (penggunaan)
+        label={'Kontak\nPetugas'}
+      />
+    </div>
+  </section>
+);
+
+// --- Komponen Utama (Ganti nama menjadi MasyarakatDashboard) ---
+const MasyarakatDashboard: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleLoginClick = () => {
+    navigate('/login');
+  };
+
+  // PERBAIKAN 3: Perbaiki tipe 'e'
+  const handleImageError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src =
+      'https://via.placeholder.com/300x150?text=Gagal+Memuat';
+  };
+
+  // PERBAIKAN 3: Perbaiki tipe 'e'
+  const handleLogoError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.style.display = 'none';
+    const fallbackIcon = e.currentTarget.nextSibling as HTMLElement;
+    if (fallbackIcon) {
+      fallbackIcon.style.display = 'block';
+    }
+  };
+
   return (
-    <Grid
-      container
-      component="main"
-      columns={12}
-      spacing={3.75}
-      flexGrow={1}
-      pt={4.375}
-      pr={1.875}
-      pb={0}
-      sx={{
-        width: { md: `calc(100% - ${drawerWidth}px)` },
-        pl: { xs: 3.75, lg: 0 },
-      }}
-    >
-      <Grid xs={12}>
-        <SaleInfoCards />
-      </Grid>
-      <Grid xs={12} md={8}>
-        <Revenue />
-      </Grid>
-      <Grid xs={12} md={4}>
-        <WebsiteVisitors />
-      </Grid>
-      <Grid xs={12} lg={8}>
-        <TopSellingProduct />
-      </Grid>
-      <Grid xs={12} lg={4}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row', lg: 'column' }}
-          gap={3.75}
-          height={1}
-          width={1}
-        >
-          <NewCustomers />
-          <BuyersProfile />
-        </Stack>
-      </Grid>
-    </Grid>
+      <main className="main-content">
+        <div className="main-wrapper">
+          <div className="banner-container">
+            {/* PERBAIKAN 2: Gunakan path root ( / ) */}
+            <img
+              src="/image.png"
+              alt="Banner Damkar"
+              className="banner-img"
+              onError={handleImageError}
+            />
+          </div>
+          <LaporSection />
+          <LayananSection />
+        </div>
+      </main>
   );
 };
 
-export default Sales;
+export default MasyarakatDashboard; // Ganti nama export

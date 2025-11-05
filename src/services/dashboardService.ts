@@ -15,13 +15,50 @@ export interface DashboardStatsResponse {
 }
 
 export async function getDashboardStats(): Promise<DashboardStatsResponse> {
-  const userRaw = localStorage.getItem('user');
-  const token = userRaw ? JSON.parse(userRaw)?.token : undefined;
+  try {
+    const userRaw = localStorage.getItem('user');
+    let token;
+    
+    if (userRaw) {
+      try {
+        const user = JSON.parse(userRaw);
+        token = user?.token;
+      } catch (parseError) {
+        console.error('Error parsing user data:', parseError);
+      }
+    }
 
-  const res = await api.get('/dashboard/stats', {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  return res.data as DashboardStatsResponse;
+    const headers: any = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const res = await api.get('/dashboard/stats', { headers });
+    
+    if (!res.data || !res.data.success) {
+      throw new Error(res.data?.message || 'Failed to fetch dashboard stats');
+    }
+    
+    return res.data as DashboardStatsResponse;
+  } catch (error: any) {
+    console.error('Dashboard service error:', error);
+    if (error.response) {
+      // Server responded with error status
+      throw {
+        ...error,
+        message: error.response.data?.message || error.message,
+      };
+    } else if (error.request) {
+      // Request made but no response
+      throw {
+        ...error,
+        message: 'Tidak dapat terhubung ke server',
+      };
+    } else {
+      // Something else happened
+      throw error;
+    }
+  }
 }
 
 

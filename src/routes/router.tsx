@@ -36,6 +36,7 @@ const MasyarakatEdukasiDetail = lazy(() => import('../pages/masyarakat/edukasi/E
 const MasyarakatBuatLaporan = lazy(() => import('../pages/masyarakat/laporan/BuatLaporan'));
 const MasyarakatFormulirLaporan = lazy(() => import('../pages/masyarakat/LaporanDarurat'));
 const MasyarakatLacakLaporan = lazy(() => import('../pages/masyarakat/laporan/RiwayatLaporan'));
+const MasyarakatDetailLaporan = lazy(() => import('../pages/masyarakat/laporan/DetailLaporan'));
 const MasyarakatAjukanKunjungan = lazy(() => import('../pages/masyarakat/InformasiPublik'));
 const PetugasTugasAktif = lazy(() => import('../pages/petugas/TugasAktif'));
 const PetugasRiwayat = lazy(() => import('../pages/petugas/RiwayatTugas'));
@@ -108,6 +109,7 @@ const routes: RouteObject[] = [
               { path: paths.masyarakatEdukasiDetail, element: <MasyarakatEdukasiDetail /> }, // TAMBAHKAN
               { path: paths.masyarakatBuatLaporan, element: <MasyarakatBuatLaporan /> },
               { path: paths.masyarakatLacakLaporan, element: <MasyarakatLacakLaporan /> },
+              { path: paths.masyarakatDetailLaporan, element: <MasyarakatDetailLaporan /> },
               { path: paths.masyarakatAjukanKunjungan, element: <MasyarakatAjukanKunjungan /> },
               { path: paths.masyarakatFormulirLaporan, element: <MasyarakatFormulirLaporan /> },
             ],

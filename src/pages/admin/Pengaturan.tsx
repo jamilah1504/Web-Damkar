@@ -1,7 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Paper, Typography, Stack, TextField, Button, Divider } from '@mui/material';
 
+interface User {
+  name: string;
+  email: string;
+}
+
 const AdminPengaturan: React.FC = () => {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+  }, []);
+
   return (
     <Box sx={{ p: 3, flexGrow: 1, bgcolor: '#fff4ea' }}>
       <Typography variant="h4" component="h1" gutterBottom>
@@ -17,9 +36,21 @@ const AdminPengaturan: React.FC = () => {
             <Typography variant="h6" gutterBottom>
               Profil Admin
             </Typography>
-            <Stack direction="row" spacing={2}>
-              <TextField label="Nama Lengkap" defaultValue="Admin Utama" variant="outlined" />
-              <TextField label="Email" defaultValue="admin@damkar.go.id" variant="outlined" />
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                label="Nama Lengkap"
+                value={user?.name || ''}
+                variant="outlined"
+                fullWidth
+                disabled
+              />
+              <TextField
+                label="Email"
+                value={user?.email || ''}
+                variant="outlined"
+                fullWidth
+                disabled
+              />
             </Stack>
           </Box>
           <Box>

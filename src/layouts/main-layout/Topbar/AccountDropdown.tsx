@@ -10,12 +10,31 @@ import {
   Typography,
 } from '@mui/material';
 import IconifyIcon from 'components/base/IconifyIcon';
-import { MouseEvent, ReactElement, useState } from 'react';
+import { MouseEvent, ReactElement, useState, useEffect } from 'react';
 import profile from 'assets/profile/profile.jpg';
+
+interface User {
+  name: string;
+  email: string;
+}
 
 const AccountDropdown = (): ReactElement => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [user, setUser] = useState<User | null>(null);
   const open = Boolean(anchorEl);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+  }, []);
+
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -38,8 +57,8 @@ const AccountDropdown = (): ReactElement => {
           py: 0.625,
         }}
       >
-        <Tooltip title="Aiden Max" placement="top" arrow enterDelay={0} leaveDelay={0}>
-          <Avatar alt="Aiden Max" src={profile} sx={{ width: 45, height: 45 }} />
+        <Tooltip title={user?.name || 'User'} placement="top" arrow enterDelay={0} leaveDelay={0}>
+          <Avatar alt={user?.name || 'User'} src={profile} sx={{ width: 45, height: 45 }} />
         </Tooltip>
         <Typography
           variant="body1"
@@ -47,7 +66,7 @@ const AccountDropdown = (): ReactElement => {
           color="text.primary"
           display={{ xs: 'none', sm: 'block' }}
         >
-          Aiden Max
+          {user?.name || 'User'}
         </Typography>
         <IconifyIcon
           icon="ion:caret-down-outline"

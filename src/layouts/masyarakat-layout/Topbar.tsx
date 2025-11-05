@@ -1,33 +1,31 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom'; // 1. Impor Link dari React Router
 import { AppBar, Toolbar, Button, Box, Typography, IconButton } from '@mui/material';
 import { Home, Clock, Bell, LogIn, LogOut } from 'lucide-react';
 import MenuIcon from '@mui/icons-material/Menu';
-import { useEffect, useState } from 'react'; // 1. Impor useState dan useEffect
+
+// 2. Impor definisi path Anda
+import paths, { rootPaths } from '../../routes/paths';
 
 // Definisikan tipe data untuk user
 interface User {
   name: string;
-  // Anda bisa menambahkan properti lain seperti email, role, dll.
 }
 
 interface TopbarProps {
   onDrawerToggle: () => void;
-  // Props 'user' dan 'onLogout' tidak lagi dibutuhkan di sini
 }
 
 const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
-  // 2. Buat state untuk menampung data user
   const [user, setUser] = useState<User | null>(null);
 
-  // 3. Gunakan useEffect untuk mengambil data dari localStorage saat komponen dimuat
   useEffect(() => {
-    const storedUser = localStorage.getItem('user'); // Ambil data string dari localStorage
+    const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser)); // Ubah string JSON menjadi objek dan simpan di state
+      setUser(JSON.parse(storedUser));
     }
-  }, []); // Array kosong [] berarti efek ini hanya berjalan sekali saat komponen mount
+  }, []);
 
-  // 4. Buat fungsi handleLogout di dalam komponen
   const handleLogout = () => {
     localStorage.removeItem('user'); // Hapus data dari localStorage
     localStorage.removeItem('token'); // Hapus data dari localStorage
@@ -53,7 +51,10 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
             <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
               Pemadam Kebakaran
             </Typography>
-            <Typography variant="body2" sx={{ lineHeight: 1.2, display: { xs: 'none', sm: 'block' } }}>
+            <Typography
+              variant="body2"
+              sx={{ lineHeight: 1.2, display: { xs: 'none', sm: 'block' } }}
+            >
               Kabupaten Subang
             </Typography>
           </Box>
@@ -62,42 +63,67 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
         {/* Sisi Kanan: Navigasi */}
         <Box>
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 2 }}>
-            <Button startIcon={<Home />} sx={{ color: 'white', textTransform: 'none' }}>Home</Button>
-            
+            {/* --- PERBAIKAN 1: Tombol Home --- */}
+            <Button
+              component={RouterLink}
+              to={paths.landing} // Mengarah ke "/"
+              startIcon={<Home />}
+              sx={{ color: 'white', textTransform: 'none' }}
+            >
+              Home
+            </Button>
+
             {user && (
               <>
-                <Button startIcon={<Clock />} sx={{ color: 'white', textTransform: 'none' }}>History</Button>
-                <Button startIcon={<Bell />} sx={{ color: 'white', textTransform: 'none' }}>Notification</Button>
+                {/* --- PERBAIKAN 2: Tombol History --- */}
+                <Button
+                  component={RouterLink}
+                  // Mengarah ke rute yang menampilkan RiwayatLaporan.tsx
+                  to={`/${rootPaths.masyarakatRoot}/${paths.masyarakatLacakLaporan}`}
+                  startIcon={<Clock />}
+                  sx={{ color: 'white', textTransform: 'none' }}
+                >
+                  History
+                </Button>
+
+                {/* --- PERBAIKAN 3: Tombol Notifikasi (sementara) --- */}
+                <Button
+                  component={RouterLink}
+                  to="#!" // Ganti "#!" dengan path notifikasi jika sudah ada
+                  startIcon={<Bell />}
+                  sx={{ color: 'white', textTransform: 'none' }}
+                >
+                  Notification
+                </Button>
               </>
             )}
 
-            {/* Logika kondisional sekarang menggunakan state internal 'user' */}
             {user ? (
-              // Tombol Logout jika user ada
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 startIcon={<LogOut size={18} />}
-                onClick={handleLogout} // 5. Panggil fungsi handleLogout internal
-                sx={{ 
-                  bgcolor: 'white', 
-                  color: '#d32f2f', 
+                onClick={handleLogout}
+                sx={{
+                  bgcolor: 'white',
+                  color: '#d32f2f',
                   borderRadius: 4,
-                  '&:hover': { bgcolor: '#f0f0f0' }
+                  '&:hover': { bgcolor: '#f0f0f0' },
                 }}
               >
-                Logout ({user.name}) {/* Tampilkan nama user */}
+                Logout ({user.name})
               </Button>
             ) : (
-              // Tombol Login jika user tidak ada
-              <Button 
+              // --- PERBAIKAN 4: Tombol Login ---
+              <Button
+                component={RouterLink}
+                to={`/${rootPaths.authRoot}/${paths.login}`} // Mengarah ke /auth/login
                 variant="contained"
                 startIcon={<LogIn size={18} />}
-                onClick={() => { window.location.href = '/auth/login'; }}
-                sx={{ 
-                  bgcolor: 'white', 
-                  color: '#d32f2f', 
+                sx={{
+                  bgcolor: 'white',
+                  color: '#d32f2f',
                   borderRadius: 4,
-                  '&:hover': { bgcolor: '#f0f0f0' }
+                  '&:hover': { bgcolor: '#f0f0f0' },
                 }}
               >
                 Login

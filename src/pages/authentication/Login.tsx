@@ -119,6 +119,10 @@ const Login = (): ReactElement => {
         const role = (userData.role || 'masyarakat').replace(/\s/g, '').toLowerCase();
         console.log('Role yang diproses (REGEX clean):', `[${role}]`);
 
+        // Simpan data user ke localStorage (sudah disimpan di authService, tapi pastikan tersimpan)
+        if (userData) {
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
         localStorage.setItem('role', role);
         if (userData.token) {
           localStorage.setItem('token', userData.token);

@@ -6,13 +6,19 @@ import {
   Stack,
   Typography,
   Paper,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import IconifyIcon from 'components/base/IconifyIcon';
-import { ReactElement, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import InteractiveMap, { IMapMarker } from 'components/InteractiveMap';
 
 const MapCard = (): ReactElement => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [markers, setMarkers] = useState<IMapMarker[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const open = Boolean(anchorEl);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -22,6 +28,44 @@ const MapCard = (): ReactElement => {
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  // Sinkronkan data peta dengan halaman Analisis & Peta
+  useEffect(() => {
+    const fetchMarkers = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Autentikasi tidak ditemukan. Silakan login kembali.');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await fetch('http://localhost:5000/api/lokasi-rawan', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          throw new Error(`Gagal memuat data peta: ${res.statusText}`);
+        }
+        const data = await res.json();
+        const mapped: IMapMarker[] = (data || []).map((d: any) => ({
+          id: d.id,
+          latitude: d.latitude,
+          longitude: d.longitude,
+          namaLokasi: d.namaLokasi || d.nama_lokasi || 'Lokasi',
+        }));
+        setMarkers(mapped);
+      } catch (e: any) {
+        setError(e.message || 'Terjadi kesalahan saat memuat peta');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMarkers();
+  }, []);
 
   return (
     <Stack
@@ -95,124 +139,23 @@ const MapCard = (): ReactElement => {
             minHeight: 400,
           }}
         >
-          {/* Map Container */}
-          <Box
-            sx={{
-              height: '100%',
-              width: '100%',
-              bgcolor: 'grey.300',
-              backgroundImage: 'linear-gradient(to bottom, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-            }}
-          >
-            {/* Simulated Map Elements */}
-            <Box
-              component="svg"
-              sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                opacity: 0.3,
-              }}
-            >
-              {/* Grid lines untuk simulasi peta */}
-              <line x1="0" y1="33%" x2="100%" y2="33%" stroke="#666" strokeWidth="1" />
-              <line x1="0" y1="66%" x2="100%" y2="66%" stroke="#666" strokeWidth="1" />
-              <line x1="33%" y1="0" x2="33%" y2="100%" stroke="#666" strokeWidth="1" />
-              <line x1="66%" y1="0" x2="66%" y2="100%" stroke="#666" strokeWidth="1" />
+          {loading ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              <CircularProgress size={24} />
+              <Typography variant="body2" sx={{ ml: 1 }}>Memuat peta...</Typography>
             </Box>
-
-            {/* Location Markers */}
-            <LocationOnIcon
-              sx={{
-                position: 'absolute',
-                top: '30%',
-                left: '40%',
-                fontSize: 32,
-                color: 'error.main',
-                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
-              }}
-            />
-            <Box
-              sx={{
-                position: 'absolute',
-                top: '60%',
-                right: '30%',
-                width: 12,
-                height: 12,
-                borderRadius: '50%',
-                bgcolor: 'primary.main',
-                border: '2px solid white',
-                boxShadow: 2,
-              }}
-            />
-            <Box
-              sx={{
-                position: 'absolute',
-                bottom: '25%',
-                left: '25%',
-                width: 10,
-                height: 10,
-                borderRadius: '50%',
-                bgcolor: 'warning.main',
-                border: '2px solid white',
-                boxShadow: 2,
-              }}
-            />
-          </Box>
-
-          {/* Legend */}
-          <Paper
-            sx={{
-              position: 'absolute',
-              bottom: 8,
-              left: 8,
-              right: 8,
-              p: 1.5,
-              bgcolor: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(4px)',
-            }}
-          >
-            <Stack spacing={0.5}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <LocationOnIcon sx={{ fontSize: 16, color: 'error.main' }} />
-                <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
-                  Insiden Aktif
-                </Typography>
-              </Stack>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Box
-                  sx={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    bgcolor: 'primary.main',
-                  }}
-                />
-                <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
-                  Lokasi Rawan
-                </Typography>
-              </Stack>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Box
-                  sx={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    bgcolor: 'warning.main',
-                  }}
-                />
-                <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
-                  Area Pantau
-                </Typography>
-              </Stack>
-            </Stack>
-          </Paper>
+          ) : error ? (
+            <Box sx={{ p: 2 }}>
+              <Alert severity="error">{error}</Alert>
+            </Box>
+          ) : (
+            <Box sx={{ height: '100%', width: '100%' }}>
+              <InteractiveMap
+                markers={markers}
+                onMarkerClick={() => {}}
+              />
+            </Box>
+          )}
         </Paper>
       </Stack>
     </Stack>

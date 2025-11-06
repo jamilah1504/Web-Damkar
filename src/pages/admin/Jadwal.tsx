@@ -32,7 +32,7 @@ const AdminJadwal: React.FC = () => {
 
   const fetchJadwal = async () => {
     try {
-      const response = await axios.get('/api/jadwal'); // Ganti dengan endpoint API yang sesuai
+      const response = await axios.get('http://localhost:5000/api/jadwal');
       setJadwalList(response.data.data || []);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Gagal mengambil data jadwal.');

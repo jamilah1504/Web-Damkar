@@ -1,4 +1,4 @@
-import { ChangeEvent, ReactElement, useMemo, useState } from 'react';
+import { ChangeEvent, ReactElement, useEffect, useMemo, useState } from 'react';
 import {
   Avatar,
   Divider,
@@ -13,18 +13,32 @@ import {
 } from '@mui/material';
 import { DataGrid, GridApi, GridColDef, GridSlots, useGridApiRef } from '@mui/x-data-grid';
 import IconifyIcon from 'components/base/IconifyIcon';
-import { DataRow, rows } from 'data/products';
+// Hapus data dummy dan gunakan data dari API lokasi-rawan
+// import { DataRow, rows } from 'data/products';
 import CustomPagination from './CustomPagination';
 import { currencyFormat } from 'helpers/format-functions';
+import placeholderImg from 'assets/top-selling-products/relaxingChair.jpg';
 
-const columns: GridColDef<DataRow>[] = [
+// Tipe baris yang dipakai dalam tabel ini (disederhanakan untuk data lokasi)
+interface LokasiRow {
+  id: number;
+  product: {
+    avatar: string;
+    title: string;
+    subtitle: string;
+  };
+  orders: string; // gunakan untuk deskripsi
+  price: number; // gunakan untuk jarak (km) bila tersedia
+}
+
+const columns: GridColDef<any>[] = [
   {
     field: 'id',
     headerName: 'NO',
   },
   {
     field: 'product',
-    headerName: 'Product',
+    headerName: 'Lokasi',
     flex: 1,
     minWidth: 182.9625,
     valueGetter: (params: any) => {
@@ -51,44 +65,67 @@ const columns: GridColDef<DataRow>[] = [
   },
   {
     field: 'orders',
-    headerName: 'Orders',
-    flex: 0.75,
-    minWidth: 137.221875,
+    headerName: 'Deskripsi',
+    flex: 1,
+    minWidth: 180,
+    renderCell: (params: any) => (
+      <Typography variant="body2" color="text.secondary" noWrap>
+        {params.row.orders || '-'}
+      </Typography>
+    ),
   },
   {
     field: 'price',
-    headerName: 'Price',
+    headerName: 'Jarak (KM)',
     flex: 0.75,
     minWidth: 137.221875,
     valueGetter: (params: any) => {
       return currencyFormat(params);
     },
   },
-  {
-    field: 'adsSpent',
-    headerName: 'Ads Spent',
-    flex: 0.75,
-    minWidth: 137.221875,
-    valueGetter: (params: any) => {
-      return currencyFormat(params, { minimumFractionDigits: 3 });
-    },
-  },
-  {
-    field: 'refunds',
-    headerName: 'Refunds',
-    flex: 0.75,
-    minWidth: 137.221875,
-    renderCell: ({ row: { refunds } }: any) => {
-      if (refunds > 0) return `> ${refunds}`;
-      else return `< ${-refunds}`;
-    },
-    filterable: false,
-  },
 ];
 
 const TopSellingProduct = (): ReactElement => {
   const apiRef = useGridApiRef<GridApi>();
   const [search, setSearch] = useState('');
+  const [rowsData, setRowsData] = useState<LokasiRow[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Ambil data dari endpoint yang sama dengan halaman Analisis & Peta
+  useEffect(() => {
+    const fetchLokasi = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setLoading(false);
+        setRowsData([]);
+        return;
+      }
+      try {
+        setLoading(true);
+        const res = await fetch('http://localhost:5000/api/lokasi-rawan', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error('Gagal memuat data');
+        const data = await res.json();
+        const mapped: LokasiRow[] = (data || []).map((d: any, idx: number) => ({
+          id: d.id ?? idx + 1,
+          product: {
+            avatar: (d.images && d.images[0]) || placeholderImg,
+            title: d.namaLokasi || d.nama_lokasi || 'Lokasi',
+            subtitle: d.latitude && d.longitude ? `${d.latitude}, ${d.longitude}` : (d.deskripsi || ''),
+          },
+          orders: d.deskripsi || '-',
+          price: 0, // TODO: isi jarak bila ada referensi koordinat pusat
+        }));
+        setRowsData(mapped);
+      } catch (_e) {
+        setRowsData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLokasi();
+  }, []);
 
   const visibleColumns = useMemo(
     () =>
@@ -159,7 +196,7 @@ const TopSellingProduct = (): ReactElement => {
         <DataGrid
           apiRef={apiRef}
           columns={visibleColumns}
-          rows={rows}
+          rows={rowsData}
           getRowHeight={() => 70}
           hideFooterSelectedRowCount
           disableColumnResize
@@ -170,6 +207,7 @@ const TopSellingProduct = (): ReactElement => {
             pagination: { paginationModel: { pageSize: 5, page: 0 } },
           }}
           pageSizeOptions={[5]}
+          loading={loading}
           onResize={() => {
             apiRef.current.autosizeColumns({
               includeOutliers: true,

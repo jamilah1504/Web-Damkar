@@ -1,5 +1,6 @@
-import MasyarakatLayout from 'layouts/masyarakat-layout';
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import paths, { rootPaths } from 'routes/paths';
 
 // Komponen utama untuk halaman Firewatch
 const FirewatchPage: React.FC = () => {
@@ -124,7 +125,7 @@ const FirewatchPage: React.FC = () => {
 
 
   return (
-    <MasyarakatLayout>
+    <>
       {/* Semua CSS dari file asli disisipkan di sini */}
       <style>{`
         * {
@@ -242,6 +243,11 @@ const FirewatchPage: React.FC = () => {
             display: flex;
             gap: 2rem;
             list-style: none;
+            align-items: center;
+        }
+
+        .nav-menu li {
+            list-style: none;
         }
 
         .nav-menu a {
@@ -270,6 +276,10 @@ const FirewatchPage: React.FC = () => {
             width: 100%;
         }
 
+        .nav-menu .btn {
+            margin: 0;
+        }
+
         .menu-toggle {
             display: none;
             background: none;
@@ -281,19 +291,31 @@ const FirewatchPage: React.FC = () => {
         }
         
         /* Nav Menu Mobile Style */
-        .nav-menu-mobile {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            list-style: none;
-            position: absolute;
-            top: 64px;
-            right: 2rem;
-            background: var(--dark-card);
-            padding: 1rem;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 1050;
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+
+            .nav-menu.nav-menu-mobile {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+                list-style: none;
+                position: absolute;
+                top: 64px;
+                right: 2rem;
+                background: var(--dark-card);
+                padding: 1.5rem;
+                border-radius: 10px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                z-index: 1050;
+                min-width: 200px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            }
+
+            .nav-menu.nav-menu-mobile a::after {
+                display: none;
+            }
         }
 
         /* Hero Section */
@@ -669,10 +691,6 @@ const FirewatchPage: React.FC = () => {
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
-            .nav-menu {
-                display: none;
-            }
-
             .menu-toggle {
                 display: block;
             }
@@ -765,7 +783,33 @@ const FirewatchPage: React.FC = () => {
       {/* Animated Background */}
       <div className="fire-particles" ref={particlesContainerRef}></div>
 
-      
+      {/* Navbar */}
+      <nav className="topbar">
+        <div className="logo">
+          🔥 FireWatch
+        </div>
+        <ul className={`nav-menu ${isMenuOpen ? 'nav-menu-mobile' : ''}`}>
+          <li><a href="#home">Beranda</a></li>
+          <li><a href="#features">Fitur</a></li>
+          <li><a href="#how-it-works">Cara Kerja</a></li>
+          <li>
+            <Link 
+              to={`/${rootPaths.authRoot}/${paths.login}`}
+              className="btn btn-primary"
+              style={{ padding: '0.5rem 1.5rem', fontSize: '0.9rem' }}
+            >
+              Login
+            </Link>
+          </li>
+        </ul>
+        <button 
+          className="menu-toggle"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          {isMenuOpen ? '✕' : '☰'}
+        </button>
+      </nav>
 
       {/* Hero Section */}
       <section className="hero" id="home">
@@ -893,7 +937,7 @@ const FirewatchPage: React.FC = () => {
           </div>
         </div>
       </section>
-    </MasyarakatLayout>
+    </>
   );
 };
 

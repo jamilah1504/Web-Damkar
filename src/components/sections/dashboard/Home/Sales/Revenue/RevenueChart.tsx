@@ -3,7 +3,7 @@ import ReactEchart from 'components/base/ReactEchart';
 import * as echarts from 'echarts';
 import EChartsReactCore from 'echarts-for-react/lib/core';
 import { LineSeriesOption } from 'echarts';
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { EChartsOption } from 'echarts-for-react';
 
 type RevenueChartProps = {
@@ -11,17 +11,18 @@ type RevenueChartProps = {
   seriesData?: LineSeriesOption[];
   legendData?: any;
   colors?: string[];
+  labels?: string[];
   sx?: SxProps;
 };
 
-const RevenueChart = ({ chartRef, seriesData, legendData, colors, ...rest }: RevenueChartProps) => {
+const RevenueChart = ({ chartRef, seriesData, legendData, colors, labels = [], ...rest }: RevenueChartProps) => {
   const theme = useTheme();
 
   const option: EChartsOption = useMemo(
     () => ({
       xAxis: {
         type: 'category',
-        data: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August'],
+        data: labels.length > 0 ? labels : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
         boundaryGap: false,
         axisLine: {
           show: true,
@@ -35,7 +36,10 @@ const RevenueChart = ({ chartRef, seriesData, legendData, colors, ...rest }: Rev
           show: true,
           padding: 30,
           color: theme.palette.text.secondary,
-          formatter: (value: any) => value.slice(0, 3),
+          formatter: (value: any) => {
+            // Jika label panjang, potong menjadi 3 karakter, jika tidak gunakan as is
+            return typeof value === 'string' && value.length > 8 ? value.slice(0, 8) : value;
+          },
           fontFamily: theme.typography.body2.fontFamily,
         },
         axisTick: {
@@ -44,7 +48,6 @@ const RevenueChart = ({ chartRef, seriesData, legendData, colors, ...rest }: Rev
       },
       yAxis: {
         type: 'value',
-        max: 400,
         splitNumber: 4,
         axisLine: {
           show: false,
@@ -77,11 +80,11 @@ const RevenueChart = ({ chartRef, seriesData, legendData, colors, ...rest }: Rev
       tooltip: {
         show: true,
         trigger: 'axis',
-        valueFormatter: (value: any) => '$' + value.toFixed(0),
+        valueFormatter: (value: any) => value.toFixed(0),
       },
       series: seriesData,
     }),
-    [theme],
+    [theme, labels, seriesData],
   );
 
   return <ReactEchart ref={chartRef} echarts={echarts} option={option} {...rest} />;

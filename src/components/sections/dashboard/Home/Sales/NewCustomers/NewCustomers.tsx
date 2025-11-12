@@ -89,7 +89,27 @@ const NewCustomers = (): ReactElement => {
           </MenuItem>
         </Menu>
       </Stack>
-      <Stack pb={1.25}>
+      <Stack 
+        pb={1.25}
+        sx={{
+          maxHeight: 'calc(5 * 95px)', // Tinggi untuk tepat 5 item (80px per item)
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          '&::-webkit-scrollbar': {
+            width: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: (theme: any) => theme.palette.grey[300],
+            borderRadius: '3px',
+            '&:hover': {
+              background: (theme: any) => theme.palette.grey[400],
+            },
+          },
+        }}
+      >
         {(petugas ?? []).map((u: UserDto) => (
           <CustomerItem
             key={u.id}

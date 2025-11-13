@@ -375,7 +375,7 @@ const FirewatchPage: React.FC = () => {
 
 
   return (
-    <>
+    <MasyarakatLayout>
       {/* Semua CSS dari file asli disisipkan di sini */}
       <style>{`
         * {
@@ -612,33 +612,7 @@ const FirewatchPage: React.FC = () => {
       {/* Animated Background */}
       <div className="fire-particles" ref={particlesContainerRef}></div>
 
-      {/* Navbar */}
-      <nav className="topbar">
-        <div className="logo">
-          🔥 FireWatch
-        </div>
-        <ul className={`nav-menu ${isMenuOpen ? 'nav-menu-mobile' : ''}`}>
-          <li><a href="#home">Beranda</a></li>
-          <li><a href="#features">Fitur</a></li>
-          <li><a href="#how-it-works">Cara Kerja</a></li>
-          <li>
-            <Link 
-              to={`/${rootPaths.authRoot}/${paths.login}`}
-              className="btn btn-primary"
-              style={{ padding: '0.5rem 1.5rem', fontSize: '0.9rem' }}
-            >
-              Login
-            </Link>
-          </li>
-        </ul>
-        <button 
-          className="menu-toggle"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          {isMenuOpen ? '✕' : '☰'}
-        </button>
-      </nav>
+      
 
       {/* Hero Section */}
       <div className="dashboard-wrapper">

@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom'; // 1. Impor Link dari React Router
+import { Link as RouterLink } from 'react-router-dom';
 import { AppBar, Toolbar, Button, Box, Typography, IconButton } from '@mui/material';
 import { Home, Clock, Bell, LogIn, LogOut } from 'lucide-react';
 import MenuIcon from '@mui/icons-material/Menu';
 
-// 2. Impor definisi path Anda
 import paths, { rootPaths } from '../../routes/paths';
 
-// Definisikan tipe data untuk user
 interface User {
   name: string;
+  role:string;
 }
 
 interface TopbarProps {
@@ -19,6 +18,14 @@ interface TopbarProps {
 const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
   const [user, setUser] = useState<User | null>(null);
 
+  const homePath = user
+    ? (user.role.toLowerCase() === 'admin'
+      ? `/${rootPaths.adminRoot}/${paths.adminDashboard}` // 1. Jika user = admin
+      : (user.role.toLowerCase() === 'masyarakat'
+        ? `/${rootPaths.masyarakatRoot}/${paths.masyarakatDashboard}` // 2. Jika user = masyarakat
+        : `/${rootPaths.petugasRoot}/${paths.petugasTugasAktif}`)) // 3. Fallback untuk role lain (misal: petugas)
+    : paths.landing; // 4. Jika tidak login
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -27,11 +34,11 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('user'); // Hapus data dari localStorage
-    localStorage.removeItem('token'); // Hapus data dari localStorage
-    localStorage.removeItem('role'); // Hapus data dari localStorage
-    setUser(null); // Set state user menjadi null
-    window.location.href = '/auth/login'; // Arahkan kembali ke halaman login
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    setUser(null);
+    window.location.href = '/auth/login';
   };
 
   return (
@@ -62,23 +69,26 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
 
         {/* Sisi Kanan: Navigasi */}
         <Box>
+          {/* --- Desktop Nav --- */}
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 2 }}>
-            {/* --- PERBAIKAN 1: Tombol Home --- */}
-            <Button
-              component={RouterLink}
-              to={paths.landing} // Mengarah ke "/"
-              startIcon={<Home />}
-              sx={{ color: 'white', textTransform: 'none' }}
-            >
-              Home
-            </Button>
+            
+            {/* --- PERBAIKAN BUG: Tombol Home dipindah ke luar conditional 'user' --- */}
 
             {user && (
               <>
-                {/* --- PERBAIKAN 2: Tombol History --- */}
+                {/* Tombol Home sebelumnya ada di sini (ini bug) */}
                 <Button
                   component={RouterLink}
-                  // Mengarah ke rute yang menampilkan RiwayatLaporan.tsx
+                  to={homePath} // Menggunakan homePath dinamis
+                  startIcon={<Home />}
+                  sx={{ color: 'white', textTransform: 'none' }}
+                >
+                  Home
+                </Button>
+                
+                {/* --- Tombol History --- */}
+                <Button
+                  component={RouterLink}
                   to={`/${rootPaths.masyarakatRoot}/${paths.masyarakatLacakLaporan}`}
                   startIcon={<Clock />}
                   sx={{ color: 'white', textTransform: 'none' }}
@@ -86,10 +96,10 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
                   History
                 </Button>
 
-                {/* --- PERBAIKAN 3: Tombol Notifikasi (sementara) --- */}
+                {/* --- Tombol Notifikasi --- */}
                 <Button
                   component={RouterLink}
-                  to="#!" // Ganti "#!" dengan path notifikasi jika sudah ada
+                  to="#!"
                   startIcon={<Bell />}
                   sx={{ color: 'white', textTransform: 'none' }}
                 >
@@ -98,6 +108,7 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
               </>
             )}
 
+            {/* --- Tombol Login/Logout Desktop --- */}
             {user ? (
               <Button
                 variant="contained"
@@ -113,10 +124,9 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
                 Logout ({user.name})
               </Button>
             ) : (
-              // --- PERBAIKAN 4: Tombol Login ---
               <Button
                 component={RouterLink}
-                to={`/${rootPaths.authRoot}/${paths.login}`} // Mengarah ke /auth/login
+                to={`/${rootPaths.authRoot}/${paths.login}`}
                 variant="contained"
                 startIcon={<LogIn size={18} />}
                 sx={{
@@ -130,15 +140,43 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
               </Button>
             )}
           </Box>
+          {/* --- Akhir Desktop Nav --- */}
 
-          <IconButton
-            color="inherit"
-            edge="end"
-            onClick={onDrawerToggle}
-            sx={{ display: { md: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
+
+          {/* --- MODIFIKASI: Tampilan Mobile (Dinamis) --- */}
+          {user ? (
+            // Jika SUDAH LOGIN: Tampilkan Hamburger Menu
+            <IconButton
+              color="inherit"
+              edge="end"
+              onClick={onDrawerToggle}
+              sx={{ display: { md: 'none' } }} // Hanya tampil di mobile
+            >
+              <MenuIcon />
+            </IconButton>
+          ) : (
+            // Jika BELUM LOGIN: Tampilkan Tombol Login
+            <Button
+              component={RouterLink}
+              to={`/${rootPaths.authRoot}/${paths.login}`}
+              variant="contained"
+              startIcon={<LogIn size={16} />} // Ikon sedikit lebih kecil
+              sx={{
+                display: { md: 'none' }, // Hanya tampil di mobile
+                bgcolor: 'white',
+                color: '#d32f2f',
+                borderRadius: 4,
+                '&:hover': { bgcolor: '#f0f0f0' },
+                py: 1.5, // Padding vertikal lebih kecil
+                px: 2.0, // Padding horizontal lebih kecil
+                fontSize: '0.8rem', // Font lebih kecil
+              }}
+            >
+              Login
+            </Button>
+          )}
+          {/* --- Akhir Modifikasi Mobile --- */}
+
         </Box>
       </Toolbar>
     </AppBar>

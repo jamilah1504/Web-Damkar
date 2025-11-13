@@ -1,111 +1,92 @@
 // Login.tsx
-import { ReactElement, Suspense, useState } from 'react';
+import { ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert,
+  Box,
   Button,
-  FormControl,
-  IconButton,
-  InputAdornment,
-  InputLabel,
-  Link,
-  Skeleton,
-  Stack,
   TextField,
   Typography,
+  Divider,
+  Link as MuiLink,
 } from '@mui/material';
-import loginBanner from 'assets/authentication-banners/login.png';
-import IconifyIcon from 'components/base/IconifyIcon';
-import firesponseLogo from 'assets/logo/fireresponse-logo.png';
-import Image from 'components/base/Image';
-import authService from '../../services/authServices';
-import paths, { rootPaths } from '../../routes/paths';
-import React from 'react';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import axios from 'axios';
- 
+import authService from '../../services/authServices';
+import paths, { rootPaths } from '../../routes/paths';
+
+// Impor logo Anda di sini, misalnya:
+import Logo from '../../assets/logo/image.png';
 
 const Login = (): ReactElement => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const nodeBackendUrl = 'http://localhost:5000/api/auth/verify-token';
-  
+
+  // ... (handleGoogleLogin dan handleSubmit tetap sama)
   const handleGoogleLogin = async () => {
-      const provider = new GoogleAuthProvider();
+    const provider = new GoogleAuthProvider();
 
-      try {
-        // 1. Memulai alur Google Sign-In (Pop-up)
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const idToken = await user.getIdToken();
+      const response = await axios.post(nodeBackendUrl, { idToken });
 
-        // 2. Mendapatkan ID Token Firebase (JWT)
-        const idToken = await user.getIdToken();
+      if (response.status === 200) {
+        console.log('Backend berhasil memproses login:', response.data);
+        const userData = response.data.user;
+        const customToken = response.data.myCustomToken;
 
-        // 3. Kirim token ke backend Node.js Anda
-        // Backend akan memverifikasi, lalu MENCARI atau MEMBUAT user di DB
-        const response = await axios.post(nodeBackendUrl, { idToken });
+        if (userData && userData.role) {
+          const role = (userData.role || 'masyarakat')
+            .replace(/\s/g, '')
+            .toLowerCase();
+          console.log('Role yang diproses (dari backend):', `[${role}]`);
 
-        // 4. Backend berhasil memproses (status 200 OK)
-        if (response.status === 200) {
-          console.log("Backend berhasil memproses login:", response.data);
-
-          // Ambil data dari respons backend
-          const userData = response.data.user; // { uid, email, name, role }
-          const customToken = response.data.myCustomToken; // Token JWT kustom Anda
-
-          // --- INI ADALAH LOGIKA DARI SNIPPET 1 ANDA, DIMASUKKAN KE SINI ---
-          
-          // Cek jika backend mengirim data user dan role
-          if (userData && userData.role) {
-            
-            // Bersihkan role: default ke 'masyarakat', hapus spasi, dan lowercase
-            const role = (userData.role || 'masyarakat').replace(/\s/g, '').toLowerCase();
-            console.log('Role yang diproses (dari backend):', `[${role}]`);
-
-            // Simpan role dan token kustom dari backend ke localStorage
-            localStorage.setItem('role', role);
-            if (customToken) {
-              localStorage.setItem('token', customToken); // Ini adalah token backend Anda
-            }
-            localStorage.setItem('user', JSON.stringify(userData));
-
-
-            // Arahkan pengguna berdasarkan role
-            switch (role) {
-              case 'admin':
-                navigate(`/${rootPaths.adminRoot}/${paths.adminDashboard}`);
-                break;
-              case 'masyarakat':
-                navigate(`/${rootPaths.masyarakatRoot}/${paths.masyarakatDashboard}`);
-                break;
-              case 'petugas':
-                navigate(`/${rootPaths.petugasRoot}/${paths.petugasTugasAktif}`);
-                break;
-              default:
-                // Ini terjadi jika backend memberi role aneh (misal: 'supervisor')
-                console.warn(`Peran tidak dikenali: ${userData.role}, mengarahkan ke landing.`);
-                navigate(paths.landing);
-            }
-          } else {
-            // Skenario darurat jika backend tidak mengembalikan data user/role
-            console.error("Data pengguna atau peran tidak diterima dari backend.");
-            // Arahkan ke halaman default 'masyarakat' sesuai permintaan Anda
-            localStorage.setItem('role', 'masyarakat');
-            navigate(`/${rootPaths.masyarakatRoot}/${paths.masyarakatDashboard}`);
+          localStorage.setItem('role', role);
+          if (customToken) {
+            localStorage.setItem('token', customToken);
           }
+          localStorage.setItem('user', JSON.stringify(userData));
+
+          switch (role) {
+            case 'admin':
+              navigate(`/${rootPaths.adminRoot}/${paths.adminDashboard}`);
+              break;
+            case 'masyarakat':
+              navigate(
+                `/${rootPaths.masyarakatRoot}/${paths.masyarakatDashboard}`,
+              );
+              break;
+            case 'petugas':
+              navigate(`/${rootPaths.petugasRoot}/${paths.petugasTugasAktif}`);
+              break;
+            default:
+              console.warn(
+                `Peran tidak dikenali: ${userData.role}, mengarahkan ke landing.`,
+              );
+              navigate(paths.landing);
+          }
+        } else {
+          console.error('Data pengguna atau peran tidak diterima dari backend.');
+          localStorage.setItem('role', 'masyarakat');
+          navigate(
+            `/${rootPaths.masyarakatRoot}/${paths.masyarakatDashboard}`,
+          );
         }
-
-      } catch (error) {
-        console.error("Error saat alur login Google:", error.response ? error.response.data : error.message);
-        // Tampilkan error ke pengguna
       }
-    };
-
-  const handleClickShowPassword = () => setShowPassword(!showPassword);
+    } catch (error) {
+      console.error(
+        'Error saat alur login Google:',
+        error.response ? error.response.data : error.message,
+      );
+      setError('Login dengan Google gagal. Silakan coba lagi.');
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -116,10 +97,11 @@ const Login = (): ReactElement => {
       console.log('Data pengguna setelah login:', userData);
 
       if (userData && userData.role) {
-        const role = (userData.role || 'masyarakat').replace(/\s/g, '').toLowerCase();
+        const role = (userData.role || 'masyarakat')
+          .replace(/\s/g, '')
+          .toLowerCase();
         console.log('Role yang diproses (REGEX clean):', `[${role}]`);
 
-        // Simpan data user ke localStorage (sudah disimpan di authService, tapi pastikan tersimpan)
         if (userData) {
           localStorage.setItem('user', JSON.stringify(userData));
         }
@@ -133,7 +115,9 @@ const Login = (): ReactElement => {
             navigate(`/${rootPaths.adminRoot}/${paths.adminDashboard}`);
             break;
           case 'masyarakat':
-            navigate(`/${rootPaths.masyarakatRoot}/${paths.masyarakatDashboard}`);
+            navigate(
+              `/${rootPaths.masyarakatRoot}/${paths.masyarakatDashboard}`,
+            );
             break;
           case 'petugas':
             navigate(`/${rootPaths.petugasRoot}/${paths.petugasTugasAktif}`);
@@ -147,127 +131,255 @@ const Login = (): ReactElement => {
       }
     } catch (err: any) {
       setError(
-        err.response?.data?.message || 'Login gagal. Periksa kembali email dan password Anda.',
+        err.response?.data?.message ||
+          'Login gagal. Periksa kembali email dan password Anda.',
       );
     }
   };
 
   return (
-    <Stack
-      direction="row"
-      bgcolor="background.paper"
-      boxShadow={(theme) => theme.shadows[3]}
-      height={560}
-      width={{ md: 960 }}
+    <Box
+      sx={{
+        minHeight: '50vh',
+        minWidth: '40vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        // PERBAIKAN 1: Mengubah padding menjadi responsif
+        padding: { xs: 2, md: 4 },
+      }}
     >
-      <Stack width={{ md: 0.5 }} m={2.5} gap={8}>
-        <Link href="/" width="fit-content">
-          <Image src={firesponseLogo} width={152.6} alt="Firesponse Logo" />
-        </Link>
-        <Stack
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row-reverse' },
+          gap: { xs: 4, md: 8 },
+          alignItems: 'center',
+          width: '100%',
+        }}
+      >
+        {/* Kolom Kanan: Logo & Identitas */}
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 3,
+            textAlign: 'center',
+          }}
+        >
+          {/* Logo */}
+          <Box
+            sx={{
+              width: 180,
+              height: 180,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <img
+              src={Logo}
+              style={{
+                width: '100%',
+                height: 'auto',
+              }}
+              alt=""
+            />
+          </Box>
+
+          <Box>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 'bold',
+                color: '#333',
+                mb: 0.5,
+              }}
+            >
+              Pemadam Kebakaran
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                color: '#555',
+              }}
+            >
+              Kabupaten Subang
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Kolom Kiri: Form Login */}
+        <Box
           component="form"
           onSubmit={handleSubmit}
-          alignItems="center"
-          gap={2.5}
-          width={330}
-          mx="auto"
-          noValidate
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            width: '100%',
+          }}
         >
-          <Typography variant="h3">Login</Typography>
-          <FormControl variant="standard" fullWidth>
-            <InputLabel shrink htmlFor="email">
-              Email
-            </InputLabel>
-            <TextField
-              variant="filled"
-              placeholder="Enter your email"
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              // required
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconifyIcon icon="ic:baseline-email" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </FormControl>
-          <FormControl variant="standard" fullWidth>
-            <InputLabel shrink htmlFor="password">
-              Password
-            </InputLabel>
-            <TextField
-              variant="filled"
-              placeholder="********"
-              type={showPassword ? 'text' : 'password'}
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              // required
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="toggle password visibility"
-                      onClick={handleClickShowPassword}
-                      edge="end"
-                      sx={{ color: 'text.secondary' }}
-                    >
-                      {showPassword ? (
-                        <IconifyIcon icon="ic:baseline-key-off" />
-                      ) : (
-                        <IconifyIcon icon="ic:baseline-key" />
-                      )}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </FormControl>
-          <Typography variant="body1" sx={{ alignSelf: 'flex-end' }}>
-            <Link href={`/${rootPaths.authRoot}/forgot-password`} underline="hover">
-              Forget password
-            </Link>
-          </Typography>
-          <Button type="submit" variant="contained" fullWidth>
-            Log in
+          {/* PERBAIKAN 2 & 3: Pindahkan sx ke InputProps dan tambahkan boxSizing */}
+          <TextField
+            fullWidth
+            placeholder="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            sx={{
+              mb: 2, // Margin tetap di sx utama
+
+            }}
+            InputProps={{
+              sx: {
+                backgroundColor: '#F0F0F0',
+                borderRadius: '6px', // Target langsung
+                boxSizing: 'border-box', // Menjamin konsistensi lebar
+                '& fieldset': {
+                  borderColor: '#C0C0C0',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#A0A0A0',
+                },
+              },
+            }}
+          />
+
+          {/* PERBAIKAN 2 & 3: Pindahkan sx ke InputProps dan tambahkan boxSizing */}
+          <TextField
+            fullWidth
+            placeholder="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            sx={{
+              mb: 3, // Margin tetap di sx utama
+            }}
+            InputProps={{
+              sx: {
+                backgroundColor: '#F0F0F0',
+                borderRadius: '6px', // Target langsung
+                boxSizing: 'border-box', // Menjamin konsistensi lebar
+                '& fieldset': {
+                  borderColor: '#C0C0C0',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#A0A0A0',
+                },
+              },
+            }}
+          />
+
+          {/* PERBAIKAN 3: Tambahkan boxSizing */}
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{
+              mb: 2,
+              backgroundColor: '#C83C3C',
+              color: 'white',
+              fontWeight: 'bold',
+              borderRadius: '6px',
+              textTransform: 'none',
+              py: 1.2,
+              boxSizing: 'border-box', // Menjamin konsistensi lebar
+              '&:hover': {
+                backgroundColor: '#B02A2A',
+              },
+            }}
+          >
+            Login
           </Button>
-          
+
           {error && (
-            <Alert severity="error" sx={{ width: '100%', mt: 1 }}>
+            <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>
           )}
-          <Typography variant="body2" color="text.secondary">
-            Don't have an account ?{' '}
-            <Link
-              href={`/${rootPaths.authRoot}/register`}
-              underline="hover"
-              fontSize={(theme) => theme.typography.body1.fontSize}
-            >
-              Sign up
-            </Link>
-          </Typography>
-          <button onClick={handleGoogleLogin}>
+
+          {/* Separator "Atau" */}
+          <Divider sx={{ my: 2, color: '#BDBDBD' }}>
+            <Typography variant="body2" sx={{ color: '#A0A0A0', px: 1 }}>
+              Atau
+            </Typography>
+          </Divider>
+
+          {/* PERBAIKAN 3: Tambahkan boxSizing */}
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={handleGoogleLogin}
+            sx={{
+              mb: 2,
+              backgroundColor: 'white',
+              color: '#3C4043',
+              borderColor: '#DADCE0',
+              borderRadius: '6px',
+              textTransform: 'none',
+              fontWeight: 500,
+              py: 1.2,
+              display: 'flex',
+              gap: 1.5,
+              boxSizing: 'border-box', // Menjamin konsistensi lebar
+              '&:hover': {
+                backgroundColor: '#F8F9FA',
+                borderColor: '#DADCE0',
+              },
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18">
+              <path
+                fill="#4285F4"
+                d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"
+              />
+              <path
+                fill="#34A853"
+                d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"
+              />
+              <path
+                fill="#EA4335"
+                d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"
+              />
+            </svg>
             Masuk dengan Google
-          </button>
-        </Stack>
-      </Stack>
-      <Suspense
-        fallback={
-          <Skeleton variant="rectangular" height={1} width={1} sx={{ bgcolor: 'primary.main' }} />
-        }
-      >
-        <Image
-          alt="Login banner"
-          src={loginBanner}
-          sx={{ width: 0.5, display: { xs: 'none', md: 'block' } }}
-        />
-      </Suspense>
-    </Stack>
+          </Button>
+
+          {/* Link Register */}
+          <Typography
+            variant="body2"
+            sx={{
+              textAlign: 'center',
+              color: '#333',
+            }}
+          >
+            Tidak punya akun?{' '}
+            <MuiLink
+              href={`/${rootPaths.authRoot}/register`}
+              sx={{
+                fontWeight: 'bold',
+                color: '#333',
+                textDecoration: 'none',
+                '&:hover': {
+                  textDecoration: 'underline',
+                },
+              }}
+            >
+              Register
+            </MuiLink>
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

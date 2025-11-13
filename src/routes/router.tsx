@@ -3,6 +3,7 @@
 import { Suspense, lazy } from 'react';
 import { Outlet, RouteObject, createBrowserRouter } from 'react-router-dom';
 import paths, { rootPaths } from './paths';
+import ProtectedRoute from './ProtectedRoute';
 
 // Komponen Wajib
 import PageLoader from '../components/loading/PageLoader';
@@ -70,11 +71,13 @@ const routes: RouteObject[] = [
           {
             path: rootPaths.adminRoot,
             element: (
-              <AdminLayout>
-                <Suspense fallback={<PageLoader />}>
-                  <Outlet />
-                </Suspense>
-              </AdminLayout>
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout>
+                  <Suspense fallback={<PageLoader />}>
+                    <Outlet />
+                  </Suspense>
+                </AdminLayout>
+              </ProtectedRoute>
             ),
             children: [
               { index: true, element: <AdminDashboard /> },
@@ -96,11 +99,13 @@ const routes: RouteObject[] = [
           {
             path: rootPaths.masyarakatRoot,
             element: (
-              <MasyarakatLayout>
-                <Suspense fallback={<PageLoader />}>
-                  <Outlet />
-                </Suspense>
-              </MasyarakatLayout>
+              <ProtectedRoute allowedRoles={['masyarakat']}>
+                <MasyarakatLayout>
+                  <Suspense fallback={<PageLoader />}>
+                    <Outlet />
+                  </Suspense>
+                </MasyarakatLayout>
+              </ProtectedRoute>
             ),
             children: [
               { index: true, element: <MasyarakatDashboard /> },
@@ -121,11 +126,13 @@ const routes: RouteObject[] = [
           {
             path: rootPaths.petugasRoot,
             element: (
-              <PetugasLayout>
-                <Suspense fallback={<PageLoader />}>
-                  <Outlet />
-                </Suspense>
-              </PetugasLayout>
+              <ProtectedRoute allowedRoles={['petugas', 'admin','masyarakat']}>
+                <PetugasLayout>
+                  <Suspense fallback={<PageLoader />}>
+                    <Outlet />
+                  </Suspense>
+                </PetugasLayout>
+              </ProtectedRoute>
             ),
             children: [
               { index: true, element: <PetugasTugasAktif /> },

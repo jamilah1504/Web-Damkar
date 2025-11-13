@@ -1,10 +1,9 @@
-// PERBAIKAN 3: Impor 'SyntheticEvent'
-import React, { SyntheticEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+// Layout mengikuti deskripsi detail: Boxed-width dengan hero full-width
+import React, { SyntheticEvent, useState, useEffect } from 'react';
+import { useNavigate, Link as RouterLink, Link } from 'react-router-dom';
+import axios from 'axios';
 
-// 1. Impor ikon dari Lucide React
 import {
-  Shield,
   Mic,
   Keyboard,
   Phone,
@@ -12,120 +11,313 @@ import {
   HelpCircle,
   BarChart,
   Book,
-  School,
-  Contact, // PERBAIKAN 4: Menggunakan 'Contacts' (jamak)
+  Loader2,
+  AlertTriangle,
+  ArrowRightLeft,
 } from 'lucide-react';
 
+// ======================================================
+// === DEFINISI TIPE DAN API CLIENT ===
+// ======================================================
 
-// PERBAIKAN 2: Hapus impor gambar dari 'public' (sudah benar)
+interface EdukasiItem {
+  id: number;
+  judul: string;
+  isiKonten: string;
+  kategori: string;
+  fileUrl: string | null;
+  timestampDibuat: string;
+}
 
-// --- Komponen Pengganti _buildServiceButton ---
+const apiClient = axios.create({
+  baseURL: 'http://localhost:5000/api',
+});
+
+const isImageUrl = (url: string | null): boolean => {
+  if (!url) return false;
+  return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+};
+
+const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/400x300.png?text=Edukasi+Damkar';
+const HeroSection: React.FC = () => {
+  const handleImageError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = 'https://via.placeholder.com/1920x400?text=Hero+Banner+Damkar';
+  };
+  
+  return (
+    <section className="hero-section">
+      {/* Lapisan Latar Belakang */}
+      <div className="hero-background">
+        <img
+          src="/image.png"
+          alt="Hero Banner Damkar"
+          className="hero-bg-image"
+          onError={handleImageError}
+        />
+      </div>
+      
+      {/* Tombol LAPOR Utama (Mengambang dengan position absolute) */}
+      <div className="lapor-floating-wrapper">
+        <button className="lapor-main-button">
+          <div className="lapor-circle">
+            <Mic size={40} strokeWidth={2.5} />
+          </div>
+          <span className="lapor-label">LAPOR</span>
+        </button>
+      </div>
+    </section>
+  );
+};
+
+// ======================================================
+// === ROW 3: TOMBOL AKSI SEKUNDER ===
+// ======================================================
+
+const SecondaryActions: React.FC = () => {
+  const navigate = useNavigate();
+  
+  return (
+    <section className="secondary-actions">
+      <div className="boxed-container">
+        <div className="actions-flex">
+          {/* Tombol Kiri */}
+          <button 
+            className="action-btn action-btn-teks"
+            onClick={() => navigate('/masyarakat/formulir-laporan')}
+          >
+            <Keyboard size={20} />
+            <span>Lapor Via Teks</span>
+          </button>
+          
+          {/* Tombol Kanan */}
+          <button className="action-btn action-btn-telepon">
+            <Phone size={20} />
+            <span>Telepon</span>
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ======================================================
+// === ROW 4: KONTEN UTAMA (LAYANAN & EDUKASI) ===
+// ======================================================
+
+// Komponen Service Button untuk Grid 2x2
 interface ServiceButtonProps {
   icon: React.ReactNode;
   label: string;
   onClick?: () => void;
 }
 
-const ServiceButton: React.FC<ServiceButtonProps> = ({
-  icon,
-  label,
-  onClick,
-}) => (
-  <button onClick={onClick} className="service-button">
-    {icon}
-    <span className="service-button-label">{label}</span>
+const ServiceButton: React.FC<ServiceButtonProps> = ({ icon, label, onClick }) => (
+  <button onClick={onClick} className="service-btn">
+    <div className="service-icon-wrapper">{icon}</div>
+    <span className="service-text">{label}</span>
   </button>
 );
 
-// --- Komponen Pengganti _buildLaporSection ---
-const LaporSection: React.FC = () => (
-  <section className="lapor-section">
-    <button className="lapor-button-main">
-      <div className="lapor-button-inner">
-        <Mic size={40} />
-        <span className="lapor-button-text">LAPOR</span>
-      </div>
-    </button>
-
-    <div className="lapor-options-container">
-      <button className="lapor-option-button"
-        onClick={() => { window.location.href = '/masyarakat/formulir-laporan'; }}
-      >
-        <Keyboard size={20} />
-        <span>Lapor Via Teks</span>
-      </button>
-      <button className="lapor-option-button">
-        <Phone size={20} />
-        <span>Telepon</span>
-      </button>
-    </div>
-  </section>
-);
-
-// --- Komponen Pengganti _buildLayananSection ---
-const LayananSection: React.FC = () => (
-  <section className="layanan-section">
-    <h2 className="layanan-title">Layanan</h2>
-    <div className="layanan-grid">
-      <ServiceButton icon={<Flame size={30} />} label={'Lapor\nKebakaran'} />
-      <ServiceButton
-        icon={<HelpCircle size={30} />}
-        label={'Lapor Non\nKebakaran'}
-      />
-      <ServiceButton
-        icon={<BarChart size={30} />}
-        label={'Grafik\nKejadian'}
-      />
-      <ServiceButton icon={<Book size={30} />} label={'Daftar\nKunjungan'} />
-      <ServiceButton icon={<School size={30} />} label={'Edukasi\nPublik'} />
-      <ServiceButton
-        icon={<Contact size={30} />} // PERBAIKAN 4 (penggunaan)
-        label={'Kontak\nPetugas'}
-      />
-    </div>
-  </section>
-);
-
-// --- Komponen Utama (Ganti nama menjadi MasyarakatDashboard) ---
-const MasyarakatDashboard: React.FC = () => {
+// 4a. Kolom Kiri: Section Layanan
+const LayananSection: React.FC = () => {
   const navigate = useNavigate();
-
-  const handleLoginClick = () => {
-    navigate('/login');
-  };
-
-  // PERBAIKAN 3: Perbaiki tipe 'e'
-  const handleImageError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
-    e.currentTarget.src =
-      'https://via.placeholder.com/300x150?text=Gagal+Memuat';
-  };
-
-  // PERBAIKAN 3: Perbaiki tipe 'e'
-  const handleLogoError = (e: SyntheticEvent<HTMLImageElement, Event>) => {
-    e.currentTarget.style.display = 'none';
-    const fallbackIcon = e.currentTarget.nextSibling as HTMLElement;
-    if (fallbackIcon) {
-      fallbackIcon.style.display = 'block';
-    }
-  };
-
+  
   return (
-      <main className="main-content">
-        <div className="main-wrapper">
-          <div className="banner-container">
-            {/* PERBAIKAN 2: Gunakan path root ( / ) */}
-            <img
-              src="/image.png"
-              alt="Banner Damkar"
-              className="banner-img"
-              onError={handleImageError}
-            />
-          </div>
-          <LaporSection />
-          <LayananSection />
-        </div>
-      </main>
+    <div className="layanan-column">
+      <h2 className="section-heading">Layanan</h2>
+      
+      {/* Grid 2x2 untuk 4 tombol pertama */}
+      <div className="layanan-grid-2x2">
+        <ServiceButton 
+          onClick={() => navigate('/masyarakat/formulir-laporan')}
+          icon={<Flame size={36} />} 
+          label="Lapor Kebakaran" 
+        />
+        <ServiceButton
+          onClick={() => navigate('/masyarakat/formulir-laporan')}
+          icon={<HelpCircle size={36} />}
+          label="Lapor Non Kebakaran"
+        />
+        <ServiceButton
+          icon={<BarChart size={36} />}
+          label="Grafik Kejadian"
+        />
+        <ServiceButton 
+          icon={<Book size={36} />} 
+          label="Daftar Kunjungan" 
+        />
+      </div>
+    </div>
   );
 };
 
-export default MasyarakatDashboard; // Ganti nama export
+// 4b. Kolom Kanan: Section Materi Edukasi
+const EdukasiCard: React.FC<{ item: EdukasiItem; isActive?: boolean }> = ({ item, isActive }) => {
+  return (
+    <RouterLink 
+      to={`/masyarakat/edukasi/detail/${item.id}`} 
+      className={`edukasi-card ${isActive ? 'active' : ''}`}
+    > 
+      <h3 className="card-title">{item.judul}</h3>
+      
+      <div className="card-image-wrapper">
+        <img
+          src={isImageUrl(item.fileUrl) ? item.fileUrl! : PLACEHOLDER_IMAGE}
+          alt={item.judul}
+          className="card-image"
+        />
+      </div>
+    </RouterLink>
+  );
+};
+
+interface EdukasiSectionProps {
+  data: EdukasiItem[];
+  loading: boolean;
+  error: string | null;
+}
+
+const EdukasiSection: React.FC<EdukasiSectionProps> = ({ data, loading, error }) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="status-display">
+          <Loader2 className="icon-spin" size={40} />
+          <p>Memuat konten edukasi...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="status-display status-error">
+          <AlertTriangle size={40} />
+          <p>{error}</p>
+        </div>
+      );
+    }
+    
+    if (data.length === 0) {
+      return (
+        <div className="status-display">
+          <p>Belum ada konten edukasi.</p>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <EdukasiCard item={data[activeIndex]} isActive />
+        
+        {/* Indikator Slider (3 titik) */}
+        <div className="carousel-indicators">
+          {data.slice(0, 3).map((_, index) => (
+            <button
+              key={index}
+              className={`indicator-dot ${index === activeIndex ? 'active' : ''}`}
+              onClick={() => setActiveIndex(index)}
+              aria-label={`Slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      </>
+    );
+  };
+
+  return (
+    <div className="edukasi-column">
+      <div className="section-header-wrapper">
+        <h2 className="section-heading">Materi Edukasi</h2>
+        
+        {/* BARU: Link "Lihat Semua" dengan panah */}
+        <Link to="/masyarakat/edukasi/list" className="see-all-link">
+          <span>Lihat Semua</span>
+          <ArrowRightLeft size={18} />
+        </Link>
+      </div>
+      {renderContent()}
+    </div>
+  );
+};
+
+// Container untuk Row 4 (Grid Asimetris)
+const MainContent: React.FC<{
+  edukasiData: EdukasiItem[];
+  loadingEdukasi: boolean;
+  errorEdukasi: string | null;
+}> = ({ edukasiData, loadingEdukasi, errorEdukasi }) => {
+  return (
+    <section className="main-content">
+      <div className="boxed-container">
+        <div className="content-grid-asymmetric">
+          {/* Kolom Kiri (60-70%) */}
+          <LayananSection />
+          
+          {/* Kolom Kanan (30-40%) */}
+          <EdukasiSection 
+            data={edukasiData}
+            loading={loadingEdukasi}
+            error={errorEdukasi}
+          />
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ======================================================
+// === KOMPONEN UTAMA: MASYARAKAT DASHBOARD ===
+// ======================================================
+
+const MasyarakatDashboard: React.FC = () => {
+  const [edukasiList, setEdukasiList] = useState<EdukasiItem[]>([]);
+  const [loadingEdukasi, setLoadingEdukasi] = useState(true);
+  const [errorEdukasi, setErrorEdukasi] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchEdukasi = async () => {
+      try {
+        setLoadingEdukasi(true);
+        const response = await apiClient.get('/edukasi', {
+          params: { limit: 5 }
+        });
+        
+        if (response.data && response.data.data) {
+          setEdukasiList(response.data.data);
+        } else {
+          setEdukasiList([]);
+        }
+        setErrorEdukasi(null);
+      } catch (err) {
+        setErrorEdukasi('Gagal mengambil data edukasi.');
+        console.error(err);
+      } finally {
+        setLoadingEdukasi(false);
+      }
+    };
+
+    fetchEdukasi();
+  }, []);
+
+  return (
+    <div className="dashboard-wrapper">
+      
+      {/* ROW 2: Hero Section */}
+      <HeroSection />
+      
+      {/* ROW 3: Tombol Aksi Sekunder */}
+      <SecondaryActions />
+      
+      {/* ROW 4: Konten Utama */}
+      <MainContent 
+        edukasiData={edukasiList}
+        loadingEdukasi={loadingEdukasi}
+        errorEdukasi={errorEdukasi}
+      />
+    </div>
+  );
+};
+
+export default MasyarakatDashboard;

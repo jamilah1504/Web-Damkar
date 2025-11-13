@@ -8,7 +8,7 @@ const AuthLayout = ({ children }: PropsWithChildren): ReactElement => {
       justifyContent="center"
       alignItems="center"
       minHeight="100vh"
-      bgcolor="background.default"
+      bgcolor="#fff"
       py={10}
     >
       {children}

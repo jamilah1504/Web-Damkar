@@ -1,7 +1,7 @@
 import { ReactElement } from 'react';
 import { Box, Button, Container, Stack, Typography } from '@mui/material';
 import { Link as Nav } from 'react-router-dom';
-import logo from 'assets/logo/elegant-logo.png';
+import logo from 'assets/logo/image.png';
 import error404 from 'assets/404/404.jpg';
 import Image from 'components/base/Image';
 
@@ -23,7 +23,11 @@ const Error404 = (): ReactElement => {
   return (
     <>
       {renderHeader}
-      <Container>
+      <Container
+      sx={{
+        backgroundColor: "#fff"
+      }}
+      >
         <Stack
           textAlign="center"
           alignItems="center"
@@ -49,7 +53,15 @@ const Error404 = (): ReactElement => {
               my: { xs: 5, sm: 10 },
             }}
           />
-          <Button component={Nav} to="/" size="large" variant="contained">
+          <Button component={Nav} to="/" size="large" variant="contained"
+          sx={{
+            color: 'white',
+             backgroundColor: '#d32f2f',
+             '&:hover': {
+               backgroundColor: '#b71c1c',
+             },
+          }}
+          >
             Back to Home
           </Button>
         </Stack>

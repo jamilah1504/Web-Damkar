@@ -1,7 +1,7 @@
 import { ReactElement } from 'react';
 import { Box, Button, Container, Stack, Typography } from '@mui/material';
 import { Link as Nav, useNavigate } from 'react-router-dom';
-import logo from 'assets/logo/elegant-logo.png';
+import logo from 'assets/logo/image.png';
 // Ganti dengan gambar yang sesuai untuk halaman "Unauthorized" / 403
 import error403 from 'assets/404/404.jpg'; 
 import Image from 'components/base/Image';
@@ -30,7 +30,11 @@ const Unauthorized = (): ReactElement => {
   return (
     <>
       {renderHeader}
-      <Container>
+      <Container
+        sx={{
+          bgcolor: '#fff',
+        }}
+        >
         <Stack
           textAlign="center"
           alignItems="center"
@@ -56,7 +60,15 @@ const Unauthorized = (): ReactElement => {
             }}
           />
           {/* Opsi 1: Tombol Kembali ke Halaman Utama */}
-          <Button component={Nav} to="/" size="large" variant="contained">
+          <Button component={Nav} to="/" size="large" variant="contained"
+          sx={{
+             color: 'white',
+             backgroundColor: '#d32f2f',
+             '&:hover': {
+               backgroundColor: '#b71c1c',
+             },
+          }}
+          >
             Back to Home
           </Button>
 

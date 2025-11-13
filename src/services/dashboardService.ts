@@ -61,4 +61,58 @@ export async function getDashboardStats(): Promise<DashboardStatsResponse> {
   }
 }
 
+export interface LaporanVisualizationResponse {
+  success: boolean;
+  data: {
+    labels: string[];
+    laporan: number[];
+    insiden: number[];
+    period: string;
+  };
+}
+
+export async function getLaporanVisualization(period: 'daily' | 'monthly' | 'quarterly' | 'yearly' = 'monthly'): Promise<LaporanVisualizationResponse> {
+  try {
+    const userRaw = localStorage.getItem('user');
+    let token;
+    
+    if (userRaw) {
+      try {
+        const user = JSON.parse(userRaw);
+        token = user?.token;
+      } catch (parseError) {
+        console.error('Error parsing user data:', parseError);
+      }
+    }
+
+    const headers: any = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const res = await api.get(`/dashboard/visualization?period=${period}`, { headers });
+    
+    if (!res.data || !res.data.success) {
+      throw new Error(res.data?.message || 'Failed to fetch visualization data');
+    }
+    
+    return res.data as LaporanVisualizationResponse;
+  } catch (error: any) {
+    console.error('Visualization service error:', error);
+    if (error.response) {
+      throw {
+        ...error,
+        message: error.response.data?.message || error.message,
+      };
+    } else if (error.request) {
+      throw {
+        ...error,
+        message: 'Tidak dapat terhubung ke server',
+      };
+    } else {
+      throw error;
+    }
+  }
+}
+
 

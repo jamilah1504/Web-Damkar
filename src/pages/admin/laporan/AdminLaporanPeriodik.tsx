@@ -44,13 +44,24 @@ interface ReportItem {
 }
 
 const AdminLaporanPeriodik = (): ReactElement => {
+  const currentDate = new Date();
   const [type, setType] = useState('bulanan');
-  const [month, setMonth] = useState('2025-09');
+  const [month, setMonth] = useState(`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`);
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const [history, setHistory] = useState<ReportItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reportTypes, setReportTypes] = useState<string[]>([]);
+
+  const fetchReportTypes = async () => {
+    try {
+      const { data } = await apiClient.get('/laporan-periodik/types'); // Pastikan endpoint ini benar
+      setReportTypes(data.data || []);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Gagal ambil jenis laporan.');
+    }
+  };
 
   const fetchHistory = async () => {
     setLoadingHistory(true);
@@ -65,6 +76,7 @@ const AdminLaporanPeriodik = (): ReactElement => {
   };
 
   useEffect(() => {
+    fetchReportTypes();
     fetchHistory();
   }, []);
 
@@ -120,9 +132,11 @@ const AdminLaporanPeriodik = (): ReactElement => {
             <FormControl fullWidth>
               <InputLabel>Jenis Laporan</InputLabel>
               <Select value={type} label="Jenis Laporan" onChange={(e) => setType(e.target.value)}>
-                <MenuItem value="bulanan">Bulanan</MenuItem>
-                <MenuItem value="triwulan">Triwulanan</MenuItem>
-                <MenuItem value="tahunan">Tahunan</MenuItem>
+                {reportTypes.map((reportType) => (
+                  <MenuItem key={reportType} value={reportType}>
+                    {reportType}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             <TextField

@@ -1,19 +1,33 @@
-import { ReactElement, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { Box, IconButton, Menu, MenuItem, Stack, Typography } from '@mui/material';
 
 import IconifyIcon from 'components/base/IconifyIcon';
-import { customerList } from 'data/customers-list';
 import CustomerItem from './CustomerItem';
+import { getPetugasUsers, UserDto } from 'services/userService';
 
 const NewCustomers = (): ReactElement => {
   const [anchorEl, setAnchorEl] = useState(null);
+  const [petugas, setPetugas] = useState<UserDto[] | null>(null);
   const open = Boolean(anchorEl);
+
   const handleClick = (event: any) => {
     setAnchorEl(event.target);
   };
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await getPetugasUsers();
+        setPetugas(list);
+      } catch (e) {
+        console.error('Gagal mengambil data petugas:', e);
+        setPetugas([]);
+      }
+    })();
+  }, []);
 
   return (
     <Box
@@ -22,7 +36,7 @@ const NewCustomers = (): ReactElement => {
         borderRadius: 5,
         height: 1,
         width: 1,
-        boxShadow: (theme) => theme.shadows[4],
+        boxShadow: (theme: any) => theme.shadows[4],
       }}
     >
       <Stack direction="row" justifyContent="space-between" alignItems="center" padding={2.5}>
@@ -75,13 +89,32 @@ const NewCustomers = (): ReactElement => {
           </MenuItem>
         </Menu>
       </Stack>
-      <Stack pb={1.25}>
-        {customerList.map((customer) => (
+      <Stack 
+        pb={1.25}
+        sx={{
+          maxHeight: 'calc(5 * 95px)', // Tinggi untuk tepat 5 item (80px per item)
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          '&::-webkit-scrollbar': {
+            width: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: (theme: any) => theme.palette.grey[300],
+            borderRadius: '3px',
+            '&:hover': {
+              background: (theme: any) => theme.palette.grey[400],
+            },
+          },
+        }}
+      >
+        {(petugas ?? []).map((u: UserDto) => (
           <CustomerItem
-            key={customer.id}
-            name={customer.name}
-            country={customer.country}
-            avatar={customer.avatar}
+            key={u.id}
+            name={u.name}
+            subtitle={u.pangkat || u.role}
           />
         ))}
       </Stack>

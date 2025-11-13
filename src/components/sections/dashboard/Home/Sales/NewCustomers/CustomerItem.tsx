@@ -2,17 +2,17 @@ import { Avatar, IconButton, Link, ListItem, Stack, Tooltip, Typography } from '
 import IconifyIcon from 'components/base/IconifyIcon';
 import { ReactElement } from 'react';
 
-type CustomerItemProps = {
+export type CustomerItemProps = {
   name: string;
-  country: string;
-  avatar: string;
+  subtitle?: string; // contoh: pangkat atau role
+  avatar?: string;
 };
 
-const CustomerItem = ({ name, country, avatar }: CustomerItemProps): ReactElement => {
+const CustomerItem = ({ name, subtitle, avatar }: CustomerItemProps): ReactElement => {
   const firstName = name.split(' ')[0];
   return (
     <ListItem
-      sx={(theme) => ({
+      sx={(theme: any) => ({
         display: 'flex',
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -27,9 +27,11 @@ const CustomerItem = ({ name, country, avatar }: CustomerItemProps): ReactElemen
           <Typography variant="body1" color="text.primary">
             {name}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {country}
-          </Typography>
+          {!!subtitle && (
+            <Typography variant="body2" color="text.secondary">
+              {subtitle}
+            </Typography>
+          )}
         </Stack>
       </Stack>
       <IconButton>

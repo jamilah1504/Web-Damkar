@@ -1,82 +1,91 @@
-import { ReactElement, useRef, useState } from 'react';
-import { Box, Button, Stack, Typography, useTheme } from '@mui/material';
+import { ReactElement, useEffect, useRef, useState } from 'react';
+import { Box, Button, Stack, Typography, useTheme, CircularProgress } from '@mui/material';
 import EChartsReactCore from 'echarts-for-react/lib/core';
 import RevenueChart from './RevenueChart';
 import { LineSeriesOption } from 'echarts';
+import { getLaporanVisualization } from 'services/dashboardService';
 
 const Revenue = (): ReactElement => {
   const theme = useTheme();
   const chartRef = useRef<EChartsReactCore | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [chartData, setChartData] = useState<{
+    labels: string[];
+    laporan: number[];
+    insiden: number[];
+  }>({
+    labels: [],
+    laporan: [],
+    insiden: [],
+  });
+  const [currentPeriod, setCurrentPeriod] = useState<'daily' | 'monthly' | 'quarterly' | 'yearly'>('monthly');
 
   const lineChartColors = [
     theme.palette.secondary.main,
     theme.palette.primary.main,
-    theme.palette.info.main,
-    theme.palette.success.main,
   ];
 
   const legendData = [
-    { name: 'Harian', icon: 'circle' },
-    { name: 'Bulanan', icon: 'circle' },
-    { name: 'Triwulan', icon: 'circle' },
-    { name: 'Tahunan', icon: 'circle' },
+    { name: 'Laporan', icon: 'circle' },
+    { name: 'Insiden', icon: 'circle' },
   ];
+
+  // Fetch data dari API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await getLaporanVisualization(currentPeriod);
+        if (response.success && response.data) {
+          setChartData({
+            labels: response.data.labels,
+            laporan: response.data.laporan,
+            insiden: response.data.insiden,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching visualization data:', error);
+        // Set default empty data jika error
+        setChartData({
+          labels: [],
+          laporan: [],
+          insiden: [],
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [currentPeriod]);
 
   const seriesData: LineSeriesOption[] = [
     {
       id: 1,
-      data: [65, 210, 175, 140, 105, 20, 120, 20],
+      data: chartData.laporan,
       type: 'line',
       smooth: true,
       color: lineChartColors[0],
-      name: 'Harian',
+      name: 'Laporan',
       legendHoverLink: true,
       showSymbol: true,
-      symbolSize: 12,
+      symbolSize: 8,
       lineStyle: {
-        width: 5,
+        width: 3,
       },
     },
     {
       id: 2,
-      data: [20, 125, 100, 30, 150, 300, 90, 180],
+      data: chartData.insiden,
       type: 'line',
       smooth: true,
       color: lineChartColors[1],
-      name: 'Bulanan',
+      name: 'Insiden',
       legendHoverLink: true,
-      showSymbol: false,
-      symbolSize: 12,
+      showSymbol: true,
+      symbolSize: 8,
       lineStyle: {
-        width: 5,
-      },
-    },
-    {
-      id: 3,
-      data: [40, 90, 100, 30, 80, 300, 90, 180],
-      type: 'line',
-      smooth: true,
-      color: lineChartColors[2],
-      name: 'Triwulan',
-      legendHoverLink: true,
-      showSymbol: false,
-      symbolSize: 12,
-      lineStyle: {
-        width: 5,
-      },
-    },
-    {
-      id: 4,
-      data: [20, 50, 100, 30, 20, 300, 30, 180],
-      type: 'line',
-      smooth: true,
-      color: lineChartColors[3],
-      name: 'Tahunan',
-      legendHoverLink: true,
-      showSymbol: false,
-      symbolSize: 12,
-      lineStyle: {
-        width: 5,
+        width: 3,
       },
     },
   ];
@@ -92,10 +101,8 @@ const Revenue = (): ReactElement => {
   };
 
   const [revenueAdType, setRevenueAdType] = useState<any>({
-    'Harian': false,
-    'Bulanan': false,
-    'Triwulan': false,
-    'Tahunan': false,
+    'Laporan': false,
+    'Insiden': false,
   });
 
   const toggleClicked = (name: string) => {
@@ -103,6 +110,10 @@ const Revenue = (): ReactElement => {
       ...prevState,
       [name]: !prevState[name],
     }));
+  };
+
+  const handlePeriodChange = (period: 'daily' | 'monthly' | 'quarterly' | 'yearly') => {
+    setCurrentPeriod(period);
   };
 
   return (
@@ -124,52 +135,99 @@ const Revenue = (): ReactElement => {
         <Typography variant="h5" color="text.primary">
           Visualisasi Laporan Kebakaran
         </Typography>
-        <Stack direction="row" gap={2}>
-          {Array.isArray(seriesData) &&
-            seriesData.map((dataItem, index) => (
-              <Button
-                key={dataItem.id}
-                variant="text"
-                onClick={() => {
-                  toggleClicked(dataItem.name as string);
-                  onChartLegendSelectChanged(dataItem.name as string);
-                }}
-                sx={{
-                  justifyContent: 'flex-start',
-                  p: 0,
-                  borderRadius: 1,
-                  opacity: revenueAdType[`${dataItem.name}`] ? 0.5 : 1,
-                }}
-                disableRipple
-              >
-                {' '}
-                <Stack direction="row" alignItems="center" gap={1} width={1}>
-                  <Box
-                    sx={{
-                      width: 13,
-                      height: 13,
-                      bgcolor: revenueAdType[`${dataItem.name}`]
-                        ? 'action.disabled'
-                        : lineChartColors[index],
-                      borderRadius: 400,
-                    }}
-                  ></Box>
-                  <Typography variant="body2" color="text.secondary" flex={1} textAlign={'left'}>
-                    {dataItem.name}
-                  </Typography>
-                </Stack>
-              </Button>
-            ))}
+        <Stack direction="row" gap={2} flexWrap="wrap">
+          {/* Tombol periode */}
+          <Stack direction="row" gap={1}>
+            <Button
+              variant={currentPeriod === 'daily' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => handlePeriodChange('daily')}
+            >
+              Harian
+            </Button>
+            <Button
+              variant={currentPeriod === 'monthly' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => handlePeriodChange('monthly')}
+            >
+              Bulanan
+            </Button>
+            <Button
+              variant={currentPeriod === 'quarterly' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => handlePeriodChange('quarterly')}
+            >
+              Triwulan
+            </Button>
+            <Button
+              variant={currentPeriod === 'yearly' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => handlePeriodChange('yearly')}
+            >
+              Tahunan
+            </Button>
+          </Stack>
+          {/* Legend untuk series */}
+          <Stack direction="row" gap={2}>
+            {Array.isArray(seriesData) &&
+              seriesData.map((dataItem, index) => (
+                <Button
+                  key={dataItem.id}
+                  variant="text"
+                  onClick={() => {
+                    toggleClicked(dataItem.name as string);
+                    onChartLegendSelectChanged(dataItem.name as string);
+                  }}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    p: 0,
+                    borderRadius: 1,
+                    opacity: revenueAdType[`${dataItem.name}`] ? 0.5 : 1,
+                  }}
+                  disableRipple
+                >
+                  <Stack direction="row" alignItems="center" gap={1} width={1}>
+                    <Box
+                      sx={{
+                        width: 13,
+                        height: 13,
+                        bgcolor: revenueAdType[`${dataItem.name}`]
+                          ? 'action.disabled'
+                          : lineChartColors[index],
+                        borderRadius: 400,
+                      }}
+                    ></Box>
+                    <Typography variant="body2" color="text.secondary" flex={1} textAlign={'left'}>
+                      {dataItem.name}
+                    </Typography>
+                  </Stack>
+                </Button>
+              ))}
+          </Stack>
         </Stack>
       </Stack>
-      <Box flex={1}>
-        <RevenueChart
-          chartRef={chartRef}
-          sx={{ minHeight: 1 }}
-          seriesData={seriesData}
-          legendData={legendData}
-          colors={lineChartColors}
-        />
+      <Box flex={1} sx={{ position: 'relative' }}>
+        {loading ? (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: 300,
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        ) : (
+          <RevenueChart
+            chartRef={chartRef}
+            sx={{ minHeight: 1 }}
+            seriesData={seriesData}
+            legendData={legendData}
+            colors={lineChartColors}
+            labels={chartData.labels}
+          />
+        )}
       </Box>
     </Stack>
   );

@@ -239,10 +239,10 @@ function Row(props: RowProps) {
                             <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>{laporan.deskripsi.substring(0, 50)}...</Typography>
                           </CardContent>
                           <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
-                            <IconButton size="small" sx={{ color: 'red' }} onClick={() => handleHapusLaporan(laporan.id)}>
+                            <IconButton size="small" sx={{ color: 'red'}} onClick={() => handleHapusLaporan(laporan.id)}>
                               <DeleteIcon fontSize="inherit" />
                             </IconButton>
-                            <IconButton size="small" onClick={() => handleLihatDetail(laporan)}>
+                            <IconButton size="small" sx={{ color: 'black'}} onClick={() => handleLihatDetail(laporan)}>
                               <VisibilityIcon fontSize="inherit" />
                             </IconButton>
                           </Box>
@@ -702,7 +702,16 @@ const AdminLaporanMasuk: React.FC = () => {
                   </Button>
                 )}
                 
-                <IconButton onClick={handleCloseDetailModal} disabled={isUpdatingLaporan}>
+                <IconButton 
+                    onClick={handleCloseDetailModal} 
+                    disabled={isUpdatingLaporan}
+                    sx={{ 
+                      color: 'black', // <-- Ini yang akan membuat ikon 'X' menjadi hitam
+                      // Atau jika ingin menggunakan warna dari tema:
+                      // color: 'inherit', // Mengambil warna teks induk (biasanya hitam)
+                      // color: 'action', // Warna default untuk ikon (biasanya abu-abu gelap)
+                    }}
+                  >
                   <CloseIcon />
                 </IconButton>
               </Box>
@@ -884,9 +893,18 @@ const AdminLaporanMasuk: React.FC = () => {
               <Typography variant="h6" component="h2">
                 Tambah Laporan Terkait
               </Typography>
-              <IconButton onClick={handleCloseTambahLaporanModal}>
-                <CloseIcon />
-              </IconButton>
+              <IconButton 
+                    onClick={handleCloseTambahLaporanModal} 
+                    disabled={isUpdatingLaporan}
+                    sx={{ 
+                      color: 'black', // <-- Ini yang akan membuat ikon 'X' menjadi hitam
+                      // Atau jika ingin menggunakan warna dari tema:
+                      // color: 'inherit', // Mengambil warna teks induk (biasanya hitam)
+                      // color: 'action', // Warna default untuk ikon (biasanya abu-abu gelap)
+                    }}
+                  >
+                  <CloseIcon />
+                </IconButton>
             </Stack>
             
             <TextField
@@ -944,7 +962,7 @@ const AdminLaporanMasuk: React.FC = () => {
               />
             </Button>
 
-m           <Button
+           <Button
               type="submit"
               fullWidth
               variant="contained"

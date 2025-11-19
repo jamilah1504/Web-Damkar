@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Camera,
@@ -81,6 +81,7 @@ export const submitLaporan = async (data: LaporanData) => {
   // Kirim data
   return await api.post('/reports', formData);
 };
+
 
 const MediaPreview: React.FC<MediaPreviewProps> = ({ file, onRemove }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -175,6 +176,8 @@ function DraggableMarker({
 // --- Komponen Form Utama ---
 export default function LaporanKejadianForm(): JSX.Element {
   const navigate = useNavigate();
+  const locationn = useLocation();
+
 
   const [formData, setFormData] = useState<FormDataState>({
     namaPelapor: '',
@@ -195,6 +198,7 @@ export default function LaporanKejadianForm(): JSX.Element {
     status: NotificationStatus;
     message: string;
   }>({ status: null, message: '' });
+  
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -242,6 +246,24 @@ export default function LaporanKejadianForm(): JSX.Element {
 
   useEffect(() => {
     handleGetLocation();
+  }, []);
+
+  useEffect(() => {
+    // 1. Cek apakah ada state yang dikirim saat navigasi DAN
+    //    apakah di dalamnya ada properti 'formData'
+    if (locationn.state && locationn.state.formData) {
+      const aiData = locationn.state.formData;
+
+      // 2. Perbarui state form dengan data dari AI
+      //    Kita gunakan '|| ""' untuk menangani jika ada nilai null (seperti namaPelapor)
+      setFormData((prevData) => ({
+        ...prevData,
+        namaPelapor: aiData.namaPelapor || '',
+        jenisKejadian: aiData.jenisKejadian || '',
+        detailKejadian: aiData.detailKejadian || '',
+        alamatKejadian: aiData.alamatKejadian || '',
+      }));
+    }
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -371,10 +393,8 @@ export default function LaporanKejadianForm(): JSX.Element {
             disabled={isSubmitting}
           >
             <option value="">Jenis Kejadian</option>
-            <option value="kebakaran">Kebakaran</option>
-            <option value="bencana">Bencana Alam</option>
-            <option value="kecelakaan">Kecelakaan</option>
-            <option value="lainnya">Lainnya</option>
+            <option value="Kebakaran">Kebakaran</option>
+            <option value="Non Kebakaran">Non Kebakaran</option>
           </select>
           <textarea
             name="detailKejadian"

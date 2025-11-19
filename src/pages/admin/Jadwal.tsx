@@ -19,9 +19,9 @@ import axios from 'axios';
 
 interface Jadwal {
   id: number;
-  namaSekolah: string;
+  nama_sekolah: string;
   tanggal: string;
-  jumlahPeserta: number;
+  jumlah_peserta: number;
   status: 'Terjadwal' | 'Selesai' | 'Dibatalkan';
 }
 
@@ -98,10 +98,10 @@ const AdminJadwal: React.FC = () => {
                   }}
                 >
                   <TableCell component="th" scope="row">
-                    {row.namaSekolah}
+                    {row.nama_sekolah}
                   </TableCell>
                   <TableCell align="center">{row.tanggal}</TableCell>
-                  <TableCell align="center">{row.jumlahPeserta}</TableCell>
+                  <TableCell align="center">{row.jumlah_peserta}</TableCell>
                   <TableCell align="center">{row.status}</TableCell>
                   <TableCell align="center">
                     <Button

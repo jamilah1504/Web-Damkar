@@ -1,9 +1,9 @@
 import MasyarakatLayout from 'layouts/masyarakat-layout';
-
 // Layout mengikuti deskripsi detail: Boxed-width dengan hero full-width
-import React, { SyntheticEvent, useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link as RouterLink, Link } from 'react-router-dom';
 import axios from 'axios';
+import LaporButton from '../components/LaporButton'; // <- BARU: Impor LaporButton
 
 import {
   Mic,
@@ -40,26 +40,30 @@ const isImageUrl = (url: string | null): boolean => {
   return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
 };
 
+
 const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/400x300.png?text=Edukasi+Damkar';
-const HeroSection: React.FC = () => {
-  
+type HeroSectionProps = {
+  onTranscriptReceived: (transcript: string) => void;
+};
+
+const HeroSection: React.FC<HeroSectionProps> = ({ onTranscriptReceived }) => {
   return (
     <section className="hero-section-landing">
       {/* Tombol LAPOR Utama (Mengambang dengan position absolute) */}
-        <section className="hero" id="home">
-            <div className="hero-content">
-                <h1>Sistem Pelaporan Kebakaran Real-Time</h1>
-                <p>Respons cepat, penanganan tepat. Lindungi komunitas Anda dengan teknologi pelaporan kebakaran terdepan.</p>
-            </div>
-        </section>
-        <div className="lapor-floating-wrapper-landing">
-          <button className="lapor-main-button">
-            <div className="lapor-circle">
-              <Mic size={40} strokeWidth={2.5} />
-            </div>
-            <span className="lapor-label">LAPOR</span>
-          </button>
+      <section className="hero" id="home">
+        <div className="hero-content">
+          <h1>Sistem Pelaporan Kebakaran Real-Time</h1>
+          <p>Respons cepat, penanganan tepat. Lindungi komunitas Anda dengan teknologi pelaporan kebakaran terdepan.</p>
         </div>
+      </section>
+
+      {/* PERBAIKAN 2: Markup tombol diganti dengan
+        komponen LaporButton dan prop diteruskan
+      */}
+
+      <div className='lapor-floating-wrapper-landing'>
+        <LaporButton onTranscriptReceived={onTranscriptReceived} />
+      </div>
     </section>
   );
 };
@@ -78,7 +82,7 @@ const SecondaryActions: React.FC = () => {
           {/* Tombol Kiri */}
           <button 
             className="action-btn action-btn-teks"
-            onClick={() => navigate('/masyarakat/formulir-laporan')}
+            onClick={() => navigate('/formulir-laporan')}
           >
             <Keyboard size={20} />
             <span>Lapor Via Teks</span>
@@ -124,12 +128,12 @@ const LayananSection: React.FC = () => {
       {/* Grid 2x2 untuk 4 tombol pertama */}
       <div className="layanan-grid-2x2">
         <ServiceButton 
-          onClick={() => navigate('/masyarakat/formulir-laporan')}
+          onClick={() => navigate('/formulir-laporan')}
           icon={<Flame size={36} />} 
           label="Lapor Kebakaran" 
         />
         <ServiceButton
-          onClick={() => navigate('/masyarakat/formulir-laporan')}
+          onClick={() => navigate('/formulir-laporan')}
           icon={<HelpCircle size={36} />}
           label="Lapor Non Kebakaran"
         />
@@ -264,13 +268,78 @@ const MainContent: React.FC<{
 
 // Komponen utama untuk halaman Firewatch
 const FirewatchPage: React.FC = () => {
-
-  // Refs untuk elemen DOM yang akan dimanipulasi
-  const particlesContainerRef = useRef<HTMLDivElement>(null);
-  const [edukasiList, setEdukasiList] = useState<EdukasiItem[]>([]);
+   // --- STATE UNTUK KONTEN ---
+    const particlesContainerRef = useRef<HTMLDivElement>(null);
+    const [edukasiList, setEdukasiList] = useState<EdukasiItem[]>([]);
     const [loadingEdukasi, setLoadingEdukasi] = useState(true);
     const [errorEdukasi, setErrorEdukasi] = useState<string | null>(null);
   
+    // --- STATE UNTUK LAPOR SUARA (Dipindahkan dari LaporanPage) ---
+    const [transcript, setTranscript] = useState('');
+    const [formData, setFormData] = useState<any | null>(null); // Tipe bisa disesuaikan
+    const [isExtracting, setIsExtracting] = useState(false);
+    const [errorVoice, setErrorVoice] = useState('');
+  
+    // --- FUNGSI HANDLER UNTUK LAPOR SUARA (Dipindahkan dari LaporanPage) ---
+    const handleTranscriptReceived = async (text: string) => {
+      setTranscript(text);
+      setIsExtracting(true);
+      setErrorVoice('');
+  
+      try {
+        // Menggunakan apiClient yang sudah ada
+        const response = await apiClient.post('/ai/text-to-form', {
+          transcript: text
+        });
+  
+        // Sesuaikan berdasarkan respons API Anda
+        if (response.data && response.data.formData) {
+          setFormData(response.data.formData);
+          console.log('Data untuk form:', response.data.formData);
+          // TODO: Isi state form Anda di sini atau navigasi ke formulir
+        } else {
+          throw new Error("Format respons tidak terduga dari server.");
+        }
+  
+      } catch (err: any) {
+        const errorMsg = err.response?.data?.message || err.message || 'Gagal mengekstrak form';
+        setErrorVoice(errorMsg);
+        console.error(err);
+      } finally {
+        setIsExtracting(false);
+      }
+    };
+  
+  
+    // --- USE EFFECT ---
+  
+    // Efek untuk mengambil data Edukasi
+    useEffect(() => {
+      const fetchEdukasi = async () => {
+        try {
+          setLoadingEdukasi(true);
+          const response = await apiClient.get('/edukasi', {
+            params: { limit: 5 }
+          });
+  
+          if (response.data && response.data.data) {
+            setEdukasiList(response.data.data);
+          } else {
+            setEdukasiList([]);
+          }
+          setErrorEdukasi(null);
+        } catch (err) {
+          setErrorEdukasi('Gagal mengambil data edukasi.');
+          console.error(err);
+        } finally {
+          setLoadingEdukasi(false);
+        }
+      };
+  
+      fetchEdukasi();
+    }, []);
+  
+
     useEffect(() => {
       const fetchEdukasi = async () => {
         try {
@@ -629,6 +698,17 @@ const FirewatchPage: React.FC = () => {
         loadingEdukasi={loadingEdukasi}
         errorEdukasi={errorEdukasi}
       />
+
+      {/* BARU: Area Debug dipindahkan ke sini */}
+        <div className="boxed-container">
+          <div className="debug-box">
+            <h3>Debug Info (Voice Report):</h3>
+            {transcript && <p><strong>Transkrip:</strong> "{transcript}"</p>}
+            {isExtracting && <p>Mengekstrak data...</p>}
+            {formData && <pre>{JSON.stringify(formData, null, 2)}</pre>}
+            {errorVoice && <p style={{ color: 'red' }}><strong>Error:</strong> {errorVoice}</p>}
+          </div>
+        </div>
     </div>
     </MasyarakatLayout>
   );

@@ -150,7 +150,7 @@ const MasyarakatLacakLaporan: React.FC = () => {
               status: r.status,
               timestampDibuat: r.timestampDibuat,
               pelaporId: r.pelaporId,
-              dokumentasi: r.dokumentasi || [],
+              dokumentasi: r.Dokumentasis || [],
               insiden: r.insiden || null,
             }),
           );
@@ -181,7 +181,7 @@ const MasyarakatLacakLaporan: React.FC = () => {
     setFilteredList(filtered);
   }, [filterJenis, filterTanggal, filterStatus, allReports]);
 
-  // *** STYLING CHANGE: Komponen Placeholder Foto ***
+
   // Didefinisikan di sini untuk digunakan dalam map
   const PlaceholderBox = () => (
     <Box
@@ -210,7 +210,7 @@ const MasyarakatLacakLaporan: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'center',
           minHeight: '70vh',
-          bgcolor: '#F8F9FA', // *** STYLING CHANGE ***
+          bgcolor: '#F8F9FA',
         }}
       >
         <CircularProgress size={60} thickness={5} />
@@ -222,7 +222,6 @@ const MasyarakatLacakLaporan: React.FC = () => {
   }
 
   return (
-    // *** STYLING CHANGE: Latar belakang utama ***
     <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#F8F9FA', minHeight: '100vh' }}>
       {/* HEADER */}
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={4}>
@@ -239,7 +238,7 @@ const MasyarakatLacakLaporan: React.FC = () => {
             px: 2,
             py: 2,
             borderRadius: 2, // 8px
-            bgcolor: '#F7941D', // Orange dari desain
+            bgcolor: '#dc2626', // Orange dari desain
             color: 'white',
           }}
         />
@@ -275,8 +274,7 @@ const MasyarakatLacakLaporan: React.FC = () => {
                 size="medium"
                 value={filterJenis}
                 onChange={(e) => setFilterJenis(e.target.value)}
-                placeholder="Cari Banjir, Kebakaran..."
-                // *** STYLING CHANGE: borderRadius ***
+                placeholder="Cari Non Kebakaran, Kebakaran..."
                 InputProps={{ style: { borderRadius: 8 } }}
               />
               <TextField
@@ -320,7 +318,7 @@ const MasyarakatLacakLaporan: React.FC = () => {
                   textTransform: 'none',
                   fontSize: '1rem',
                   boxShadow: 0,
-                  bgcolor: '#F7941D',
+                  bgcolor: '#dc2626',
                   '&:hover': { bgcolor: '#E6891A', boxShadow: 0 },
                 }}
                 onClick={() => {
@@ -363,7 +361,7 @@ const MasyarakatLacakLaporan: React.FC = () => {
                         <Chip
                           label={laporan.jenisKejadian}
                           sx={{
-                            bgcolor: '#F7941D',
+                            bgcolor: '#dc2626',
                             color: 'white',
                             fontWeight: 600,
                             fontSize: '1rem',
@@ -398,22 +396,33 @@ const MasyarakatLacakLaporan: React.FC = () => {
                             <>
                               {images.slice(0, 2).map((doc, idx) => (
                                 <Grid item xs={12} sm={6} key={idx}>
-                                  <CardMedia
-                                    component="img"
-                                    height={140}
-                                    image={`http://localhost:5000${doc.fileUrl}`}
-                                    alt={`Bukti ${idx + 1}`}
-                                    sx={{
-                                      borderRadius: 2,
-                                      objectFit: 'cover',
-                                      cursor: 'pointer',
-                                      transition: 'transform 0.3s',
-                                      '&:hover': { transform: 'scale(1.05)' },
-                                    }}
-                                    onClick={() =>
-                                      setSelectedImage(`http://localhost:5000${doc.fileUrl}`)
-                                    }
-                                  />
+                                    {doc.tipeFile === 'Gambar' ? (
+                                      <CardMedia
+                                        component="img"
+                                        height={140}
+                                        image={`http://localhost:5000/uploads/${doc.fileUrl}`}
+                                        alt={`Bukti ${idx + 1}`}
+                                        sx={{
+                                          borderRadius: 2,
+                                          objectFit: 'cover',
+                                          cursor: 'pointer',
+                                          transition: 'transform 0.3s',
+                                          '&:hover': { transform: 'scale(1.05)' },
+                                        }}
+                                        onClick={() =>
+                                          setSelectedImage(`http://localhost:5000/uploads/${doc.fileUrl}`)
+                                        }
+                                      />
+                                    ) : doc.tipeFile === 'Video' ? (
+                                      <CardMedia
+                                        component="video"
+                                        height={140}
+                                        src={`http://localhost:5000/uploads/${doc.fileUrl}`}
+                                      alt={`Bukti ${idx + 1}`}
+                                        controls // Penting untuk video
+                                        sx={{ borderRadius: 2, objectFit: 'cover' }}
+                                    />
+                                    ) : null}
                                 </Grid>
                               ))}
                               {images.length === 1 && (
@@ -478,18 +487,21 @@ const MasyarakatLacakLaporan: React.FC = () => {
                                   borderRadius: 2,
                                   textTransform: 'none',
                                   fontWeight: 600,
-                                  bgcolor: '#F7941D',
+                                  bgcolor: '#dc2626',
                                   color: 'white',
                                   boxShadow: 0,
                                   '&:hover': { bgcolor: '#E6891A', boxShadow: 0 },
                                 }}
                                 onClick={() => {
                                   if (laporan.latitude && laporan.longitude) {
-                                    // *** PERBAIKAN LOGIKA: URL Google Maps yang benar ***
                                     window.open(
                                       `https://www.google.com/maps/search/?api=1&query=${laporan.latitude},${laporan.longitude}`,
                                       '_blank',
                                     );
+                                    // window.open(
+                                    //   `https://www.google.com/maps?q=${laporan.latitude},${laporan.longitude}`, // <-- PERBAIKAN
+                                    //   '_blank',
+                                    // );
                                   }
                                 }}
                               >
@@ -503,12 +515,12 @@ const MasyarakatLacakLaporan: React.FC = () => {
                                   borderRadius: 2,
                                   textTransform: 'none',
                                   fontWeight: 600,
-                                  borderColor: '#F7941D',
-                                  color: '#F7941D',
+                                  borderColor: '#dc2626',
+                                  color: '#dc2626',
                                   '&:hover': {
-                                    bgcolor: '#F7941D',
+                                    bgcolor: '#dc2626',
                                     color: 'white',
-                                    borderColor: '#F7941D',
+                                    borderColor: '#dc2626',
                                   },
                                 }}
                                 onClick={() => navigate(`/masyarakat/laporan/detail/${laporan.id}`)}

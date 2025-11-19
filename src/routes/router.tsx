@@ -52,6 +52,11 @@ const routes: RouteObject[] = [
     ),
     children: [
       { path: paths.landing, element: <LandingPage /> },
+      { path: paths.masyarakatFormulirLaporan, element: 
+        <MasyarakatLayout>
+          <MasyarakatFormulirLaporan /> 
+        </MasyarakatLayout>
+      },
       {
         path: rootPaths.authRoot,
         element: (
@@ -116,7 +121,6 @@ const routes: RouteObject[] = [
               { path: paths.masyarakatLacakLaporan, element: <MasyarakatLacakLaporan /> },
               { path: paths.masyarakatDetailLaporan, element: <MasyarakatDetailLaporan /> },
               { path: paths.masyarakatAjukanKunjungan, element: <MasyarakatAjukanKunjungan /> },
-              { path: paths.masyarakatFormulirLaporan, element: <MasyarakatFormulirLaporan /> },
             ],
           },
         ],

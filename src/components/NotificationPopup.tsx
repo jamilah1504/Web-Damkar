@@ -1,12 +1,11 @@
 // src/components/NotificationPopup.tsx
 import React from 'react';
-import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import ReactDOM from 'react-dom'; // 1. Impor ReactDOM
+import { CheckCircle, XCircle, Loader2, Info } from 'lucide-react';
 
 interface NotificationPopupProps {
-  // Tentukan status untuk mengubah ikon dan warna
-  status: 'success' | 'error' | 'pending';
+  status: 'success' | 'error' | 'pending' | 'info';
   message: string;
-  // Fungsi untuk menutup popup
   onClose: () => void;
 }
 
@@ -26,7 +25,6 @@ const NotificationPopup: React.FC<NotificationPopupProps> = ({
       themeClass = 'popup-success';
       break;
     case 'error':
-      // Tema merah untuk 'gagal' seperti yang diminta
       IconComponent = <XCircle size={48} />;
       title = 'Laporan Gagal';
       themeClass = 'popup-error';
@@ -36,9 +34,15 @@ const NotificationPopup: React.FC<NotificationPopupProps> = ({
       title = 'Sedang Memproses';
       themeClass = 'popup-pending';
       break;
+    case 'info':
+      IconComponent = <Info size={48} />;
+      title = 'Informasi';
+      themeClass = 'popup-info';
+      break;
   }
 
-  return (
+  // 2. Bungkus seluruh JSX dengan ReactDOM.createPortal
+  return ReactDOM.createPortal(
     // 1. Overlay (latar belakang gelap)
     <div className="popup-overlay">
       {/* 2. Konten Popup */}
@@ -54,10 +58,10 @@ const NotificationPopup: React.FC<NotificationPopupProps> = ({
           </button>
         )}
       </div>
-    </div>
+    </div>,
+    // 3. Tentukan target 'teleportasi'
+    document.getElementById('popup-root')!
   );
 };
-
-
 
 export default NotificationPopup;

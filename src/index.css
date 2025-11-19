@@ -578,11 +578,11 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10000;
+    z-index: 2000;
     backdrop-filter: blur(4px);
     }
 
-    .popup-content {
+.popup-content {
     background: #ffffff;
     padding: 24px;
     border-radius: 12px;
@@ -633,6 +633,18 @@ body {
     /* Tema Biru/Abu untuk Pending */
     .popup-pending .popup-icon {
     color: #3498db; /* Biru */
+    }
+
+    .popup-info .popup-icon {
+      color: #3498db; /* Warna Biru Info */
+    }
+    .popup-info .popup-button {
+      background: #3498db;
+    }
+
+    /* (Opsional) Tambahkan efek hover agar konsisten */
+    .popup-info .popup-button:hover {
+      background: #2980b9; /* Biru yang sedikit lebih gelap */
     }
 
     /* Loader animasi */

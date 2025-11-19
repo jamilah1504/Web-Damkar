@@ -1,34 +1,68 @@
-import { ReactElement, useMemo, useRef, useState } from 'react';
-import { Box, Button, Divider, Stack, Typography, useTheme } from '@mui/material';
+import { ReactElement, useMemo, useRef, useState, useEffect } from 'react';
+import { Box, Button, Divider, Stack, Typography, useTheme, CircularProgress } from '@mui/material';
 import EChartsReactCore from 'echarts-for-react/lib/core';
 import { PieDataItemOption } from 'echarts/types/src/chart/pie/PieSeries.js';
 import WebsiteVisitorsChart from './WebsiteVisitorsChart';
+import api from '../../../../../../api';
+
+interface KejadianData {
+  total: number;
+  kebakaran: number;
+  nonKebakaran: number;
+}
 
 const WebsiteVisitors = (): ReactElement => {
   const theme = useTheme();
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [kejadianData, setKejadianData] = useState<KejadianData>({ total: 0, kebakaran: 0, nonKebakaran: 0 });
+  const chartRef = useRef<EChartsReactCore | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Mengambil data laporan dari API
+        const response = await api.get('/reports');
+        
+        // Menghitung jumlah kejadian kebakaran dan non-kebakaran
+        const kebakaran = response.data.filter((laporan: any) => 
+          laporan.jenisKejadian && laporan.jenisKejadian.toLowerCase().includes('kebakaran')
+        ).length;
+        
+        const nonKebakaran = response.data.length - kebakaran;
+        
+        setKejadianData({
+          total: response.data.length,
+          kebakaran,
+          nonKebakaran
+        });
+        
+      } catch (err) {
+        console.error('Gagal mengambil data kejadian:', err);
+        setError('Gagal memuat data kejadian');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const seriesData: PieDataItemOption[] = [
-    { value: 6840, name: 'Perumahan' },
-    { value: 3960, name: 'Gedung' },
-    { value: 2160, name: 'Lahan' },
-    { value: 5040, name: 'Lain-lain' },
+    { value: kejadianData.kebakaran, name: 'Kebakaran' },
+    { value: kejadianData.nonKebakaran, name: 'Non Kebakaran' },
   ];
 
   const legendData = [
-    { name: 'Perumahan', icon: 'circle' },
-    { name: 'Gedung', icon: 'circle' },
-    { name: 'Lahan', icon: 'circle' },
-    { name: 'Lain-lain', icon: 'circle' },
+    { name: 'Kebakaran', icon: 'circle' },
+    { name: 'Non Kebakaran', icon: 'circle' },
   ];
 
   const pieChartColors = [
-    theme.palette.primary.main,
-    theme.palette.secondary.main,
-    theme.palette.info.main,
-    theme.palette.error.main,
+    theme.palette.error.main, // Warna merah untuk Kebakaran
+    theme.palette.primary.main, // Warna biru untuk Non Kebakaran
   ];
-
-  const chartRef = useRef<EChartsReactCore | null>(null);
   const onChartLegendSelectChanged = (name: string) => {
     if (chartRef.current) {
       const instance = chartRef.current.getEchartsInstance();
@@ -39,10 +73,8 @@ const WebsiteVisitors = (): ReactElement => {
     }
   };
   const [visitorType, setVisitorType] = useState<any>({
-    Perumahan: false,
-    Gedung: false,
-    Lahan: false,
-    Lain: false,
+    Kebakaran: false,
+    'Non Kebakaran': false,
   });
 
   const toggleClicked = (name: string) => {
@@ -52,17 +84,36 @@ const WebsiteVisitors = (): ReactElement => {
     }));
   };
   const totalVisitors = useMemo(
-    () => seriesData.reduce((acc: number, next: any) => acc + next.value, 0),
-    [],
+    () => kejadianData.total,
+    [kejadianData.total],
   );
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 2, textAlign: 'center', color: 'error.main' }}>
+        {error}
+      </Box>
+    );
+  }
 
   return (
     <Box
       sx={{
         bgcolor: 'common.white',
         borderRadius: 5,
-        height: 'min-content',
+        minHeight: 460,
+        height: 1,
         boxShadow: theme.shadows[4],
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       <Typography variant="subtitle1" color="text.primary" p={2.5}>

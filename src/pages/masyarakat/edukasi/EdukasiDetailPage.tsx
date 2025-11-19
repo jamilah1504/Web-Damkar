@@ -73,7 +73,7 @@ const OtherNewsCard: React.FC<OtherNewsCardProps> = ({ item }) => {
     >
       <MuiLink
         component={RouterLink}
-        to={`/masyarakat/edukasi/detail/${item.id}`}
+        to={`/edukasi/detail/${item.id}`}
         underline="none"
         color="inherit"
         sx={{ 
@@ -215,7 +215,7 @@ const EdukasiDetailPage: React.FC = () => {
     return (
       <Container sx={{ py: 4 }}>
         <Alert severity="error">{error || 'Konten tidak ditemukan.'}</Alert>
-        <Button component={RouterLink} to="/masyarakat/edukasi/list" startIcon={<ArrowBackIcon />} sx={{ mt: 2 }}>
+        <Button component={RouterLink} to="/edukasi/list" startIcon={<ArrowBackIcon />} sx={{ mt: 2 }}>
           Kembali ke Daftar
         </Button>
       </Container>
@@ -229,7 +229,7 @@ const EdukasiDetailPage: React.FC = () => {
     <Container maxWidth="md" sx={{ py: 4, bgcolor: 'grey.50' }}>
       <Button
         component={RouterLink}
-        to="/masyarakat/edukasi/list"
+        to="/edukasi/list"
         startIcon={<ArrowBackIcon />}
         sx={{ mb: 2 }}
       >

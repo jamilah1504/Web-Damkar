@@ -1,141 +1,164 @@
-import React, { useState, useEffect } from 'react'; // <<< TAMBAHKAN useEffect
+import React, { useState, useEffect } from 'react';
 import { 
-  Box, 
-  List, 
-  ListItem, 
-  ListItemButton, 
-  ListItemIcon, 
-  ListItemText, 
-  Divider, 
-  Button, 
-  Typography 
+  Box, 
+  List, 
+  ListItem, 
+  ListItemButton, 
+  ListItemIcon, 
+  ListItemText, 
+  Divider, 
+  Button, 
+  Typography,
+  Badge // 1. Import Badge
 } from '@mui/material';
-import { Home, Clock, Bell, LogIn, LogOut } from 'lucide-react'; // <<< TAMBAHKAN LogIn, LogOut
+import { Home, Clock, Bell, LogIn, LogOut } from 'lucide-react';
 import paths, { rootPaths } from '../../routes/paths';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 
 interface SidebarProps {
-  onClose: () => void;
+  onClose: () => void;
 }
 
-// Definisikan tipe data untuk user (sesuaikan dengan Topbar)
 interface User {
-  name: string;
+  name: string;
+  role: string; // Tambahkan role
 }
 
-const menuItems = [
-  { text: 'Home', icon: <Home size={20} /> },
-  { text: 'History', icon: <Clock size={20} /> },
-  { text: 'Notification', icon: <Bell size={20} /> },
-];
+interface SidebarProps {
+  onClose: () => void;
+  notifCount: number; // Tambahkan ini
+}
 
-const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
-  // State untuk melacak item menu yang sedang aktif
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  // <<< TAMBAHAN: State untuk user
-  const [user, setUser] = useState<User | null>(null);
+const Sidebar: React.FC<SidebarProps> = ({ onClose, notifCount }) => { 
+  const [user, setUser] = useState<User | null>(null);
+  const location = useLocation(); // Untuk mendeteksi URL aktif
 
-  // <<< TAMBAHAN: Cek localStorage saat komponen dimuat
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
+  // Cek localStorage saat komponen dimuat
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
-  // Handler untuk mengubah item aktif dan menutup sidebar
-  const handleListItemClick = (index: number) => {
-    setSelectedIndex(index);
-    onClose(); // Menutup sidebar saat item di-klik
-  };
 
-  // <<< TAMBAHAN: Handler untuk Logout
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    setUser(null);
-    onClose(); // Tutup sidebar
-    window.location.href = '/auth/login'; // Arahkan ke login
-  };
+  // 5. Tentukan Path Home berdasarkan Role
+  const homePath = user
+    ? (user.role.toLowerCase() === 'admin'
+      ? `/${rootPaths.adminRoot}/${paths.adminDashboard}`
+      : (user.role.toLowerCase() === 'masyarakat'
+        ? `/${rootPaths.masyarakatRoot}/${paths.masyarakatDashboard}`
+        : `/${rootPaths.petugasRoot}/${paths.petugasTugasAktif}`))
+    : paths.landing;
 
-  return (
-    <Box
-      sx={{
-        width: 250,
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        bgcolor: '#dc2626', // Latar belakang merah
-        color: '#fff',       // Warna teks & ikon utama
-      }}
-      role="presentation"
-    >
-      {/* Header Logo */}
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <img src={'/logo.png'} alt="Logo Damkar" style={{ height: '35px', width: '35px' }} />
-        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-          Damkar Subang
-        </Typography>
-      </Box>
+  // 6. Definisikan Menu Items secara Dinamis (agar bisa akses state)
+  const menuItems = [
+    { 
+      text: 'Home', 
+      icon: <Home size={20} />, 
+      path: homePath 
+    },
+    { 
+      text: 'History', 
+      icon: <Clock size={20} />, 
+      path: `/${rootPaths.masyarakatRoot}/${paths.masyarakatLacakLaporan}` 
+    },
+    { 
+      text: 'Notification', 
+      icon: (
+        <Badge badgeContent={notifCount} color="warning" max={99}>
+           <Bell size={20} />
+        </Badge>
+      ), 
+      path: `/${rootPaths.masyarakatRoot}/${paths.masyarakatNotifikasi}` 
+    },
+  ];
 
-      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.2)' }} />
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    setUser(null);
+    onClose();
+    window.location.href = '/auth/login';
+  };
 
-      {/* Daftar Menu (Wrapper) */}
-      {/* Box ini akan selalu ada untuk mendorong tombol ke bawah */}
-      <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
-        {/* <<< MODIFIKASI: Tampilkan List Menu HANYA JIKA USER LOGIN */}
-        {user && (
-          <List sx={{ p: 1 }}>
-            {menuItems.map((item, index) => (
-              <ListItem key={item.text} disablePadding>
-                <ListItemButton
-                  selected={selectedIndex === index}
-                  onClick={() => handleListItemClick(index)}
-                  sx={{
-                    m: 1,
-                    borderRadius: '8px',
-                    transition: 'background-color 0.2s ease',
-                    '&:hover': {
-                      bgcolor: 'rgba(0, 0, 0, 0.1)',
-                    },
-                    '&.Mui-selected': {
-                      bgcolor: 'rgba(0, 0, 0, 0.2)',
-                      '&:hover': {
-                        bgcolor: 'rgba(0, 0, 0, 0.25)', 
-                      },
-                    },
-                  }}
-                >
-                  <ListItemIcon 
-                    sx={{ 
-                      color: 'white',
-                      minWidth: 'auto',
-                      mr: 1.5,
-                    }}
-                  >
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary={item.text} 
-                    primaryTypographyProps={{ 
-                      fontWeight: selectedIndex === index ? 600 : 400 
-                    }} 
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        )}
-      </Box>
+  return (
+    <Box
+      sx={{
+        width: 250,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: '#dc2626',
+        color: '#fff',
+      }}
+      role="presentation"
+    >
+      {/* Header Logo */}
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <img src={'/logo2.png'} alt="Logo Damkar" style={{ height: '35px', width: '35px' }} />
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+          Damkar Subang
+        </Typography>
+      </Box>
 
-      {/* Tombol Login/Logout di bawah */}
-      <Box sx={{ p: 2 }}>
-        <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.2)', mb: 2 }} />
+      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.2)' }} />
 
-        {/* <<< MODIFIKASI: Tampilkan Tombol Logout atau Login */}
+      {/* Daftar Menu */}
+      <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
+        {user && (
+          <List sx={{ p: 1 }}>
+            {menuItems.map((item) => (
+              <ListItem key={item.text} disablePadding>
+                <ListItemButton
+                  component={RouterLink} // Jadikan Link
+                  to={item.path}         // Arahkan ke Path
+                  onClick={onClose}      // Tutup sidebar saat diklik
+                  // Highlight jika URL saat ini cocok dengan path menu
+                  selected={location.pathname === item.path} 
+                  sx={{
+                    m: 1,
+                    borderRadius: '8px',
+                    transition: 'background-color 0.2s ease',
+                    '&:hover': {
+                      bgcolor: 'rgba(0, 0, 0, 0.1)',
+                    },
+                    '&.Mui-selected': {
+                      bgcolor: 'rgba(0, 0, 0, 0.2)',
+                      '&:hover': {
+                        bgcolor: 'rgba(0, 0, 0, 0.25)', 
+                      },
+                    },
+                  }}
+                >
+                  <ListItemIcon 
+                    sx={{ 
+                      color: 'white',
+                      minWidth: 'auto',
+                      mr: 1.5,
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={item.text} 
+                    primaryTypographyProps={{ 
+                      fontWeight: location.pathname === item.path ? 600 : 400 
+                    }} 
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </Box>
+
+      {/* Footer Login/Logout */}
+      <Box sx={{ p: 2 }}>
+        <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.2)', mb: 2 }} />
+
         {user ? (
-          // --- Tombol Logout ---
           <Button 
             fullWidth 
             variant="contained"
@@ -150,28 +173,27 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
             Logout ({user.name})
           </Button>
         ) : (
-          // --- Tombol Login ---
-          <Button 
-            fullWidth 
-            component={RouterLink}
-            variant="contained"
-            to={`/${rootPaths.authRoot}/${paths.login}`}
-            startIcon={<LogIn size={18} />} // <<< TAMBAHAN: Ikon
-            onClick={onClose} // <<< TAMBAHAN: Tutup sidebar saat klik
-            sx={{
-              bgcolor: '#fff', 
-              color: '#dc2626',
-              '&:hover': {
-                bgcolor: '#f1f5f9',
-              }
-            }}
-          >
-            Login
-          </Button>
+          <Button 
+            fullWidth 
+            component={RouterLink}
+            variant="contained"
+            to={`/${rootPaths.authRoot}/${paths.login}`}
+            startIcon={<LogIn size={18} />}
+            onClick={onClose}
+            sx={{
+              bgcolor: '#fff', 
+              color: '#dc2626',
+              '&:hover': {
+                bgcolor: '#f1f5f9',
+              }
+            }}
+          >
+            Login
+          </Button>
         )}
-      </Box>
-    </Box>
-  );
+      </Box>
+    </Box>
+  );
 };
 
 export default Sidebar;

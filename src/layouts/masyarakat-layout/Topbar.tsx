@@ -1,30 +1,30 @@
 import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { AppBar, Toolbar, Button, Box, Typography, IconButton } from '@mui/material';
+import { AppBar, Toolbar, Button, Box, Typography, IconButton, Badge } from '@mui/material'; // 1. Tambah Badge
 import { Home, Clock, Bell, LogIn, LogOut } from 'lucide-react';
 import MenuIcon from '@mui/icons-material/Menu';
 
 import paths, { rootPaths } from '../../routes/paths';
-
 interface User {
   name: string;
-  role:string;
+  role: string;
 }
 
 interface TopbarProps {
   onDrawerToggle: () => void;
+  notifCount: number; // Tambahkan ini
 }
 
-const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
+const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle, notifCount }) => { // Terima props
   const [user, setUser] = useState<User | null>(null);
 
   const homePath = user
     ? (user.role.toLowerCase() === 'admin'
-      ? `/${rootPaths.adminRoot}/${paths.adminDashboard}` // 1. Jika user = admin
+      ? `/${rootPaths.adminRoot}/${paths.adminDashboard}`
       : (user.role.toLowerCase() === 'masyarakat'
-        ? `/${rootPaths.masyarakatRoot}/${paths.masyarakatDashboard}` // 2. Jika user = masyarakat
-        : `/${rootPaths.petugasRoot}/${paths.petugasTugasAktif}`)) // 3. Fallback untuk role lain (misal: petugas)
-    : paths.landing; // 4. Jika tidak login
+        ? `/${rootPaths.masyarakatRoot}/${paths.masyarakatDashboard}`
+        : `/${rootPaths.petugasRoot}/${paths.petugasTugasAktif}`))
+    : paths.landing;
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -32,6 +32,7 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
       setUser(JSON.parse(storedUser));
     }
   }, []);
+
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -72,21 +73,17 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
           {/* --- Desktop Nav --- */}
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 2 }}>
             
-            {/* --- PERBAIKAN BUG: Tombol Home dipindah ke luar conditional 'user' --- */}
-
             {user && (
               <>
-                {/* Tombol Home sebelumnya ada di sini (ini bug) */}
                 <Button
                   component={RouterLink}
-                  to={homePath} // Menggunakan homePath dinamis
+                  to={homePath}
                   startIcon={<Home />}
                   sx={{ color: 'white', textTransform: 'none' }}
                 >
                   Home
                 </Button>
                 
-                {/* --- Tombol History --- */}
                 <Button
                   component={RouterLink}
                   to={`/${rootPaths.masyarakatRoot}/${paths.masyarakatLacakLaporan}`}
@@ -96,11 +93,19 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
                   History
                 </Button>
 
-                {/* --- Tombol Notifikasi --- */}
+                {/* --- 5. Tombol Notifikasi dengan Badge --- */}
                 <Button
                   component={RouterLink}
-                  to="#!"
-                  startIcon={<Bell />}
+                  to={`/${rootPaths.masyarakatRoot}/${paths.masyarakatNotifikasi}`}
+                  startIcon={
+                    <Badge 
+                        badgeContent={notifCount} 
+                        color="warning" // Pakai warna 'warning' (kuning/oranye) agar kontras dengan background merah
+                        max={99}
+                    >
+                        <Bell />
+                    </Badge>
+                  }
                   sx={{ color: 'white', textTransform: 'none' }}
                 >
                   Notification
@@ -142,40 +147,43 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle }) => {
           </Box>
           {/* --- Akhir Desktop Nav --- */}
 
-
-          {/* --- MODIFIKASI: Tampilan Mobile (Dinamis) --- */}
+          {/* --- Tampilan Mobile --- */}
           {user ? (
-            // Jika SUDAH LOGIN: Tampilkan Hamburger Menu
             <IconButton
               color="inherit"
               edge="end"
               onClick={onDrawerToggle}
-              sx={{ display: { md: 'none' } }} // Hanya tampil di mobile
+              sx={{ display: { md: 'none'},
+                  bgcolor: '#d32f2f',
+                  '&:hover': { bgcolor: '#d32f2f' },
+
+                }}
             >
-              <MenuIcon />
+              {/* Optional: Kasih badge juga di menu hamburger mobile jika diinginkan */}
+               <Badge badgeContent={notifCount} color="warning" variant="dot">
+                  <MenuIcon />
+               </Badge>
             </IconButton>
           ) : (
-            // Jika BELUM LOGIN: Tampilkan Tombol Login
             <Button
               component={RouterLink}
               to={`/${rootPaths.authRoot}/${paths.login}`}
               variant="contained"
-              startIcon={<LogIn size={16} />} // Ikon sedikit lebih kecil
+              startIcon={<LogIn size={16} />}
               sx={{
-                display: { md: 'none' }, // Hanya tampil di mobile
+                display: { md: 'none' },
                 bgcolor: 'white',
                 color: '#d32f2f',
                 borderRadius: 4,
                 '&:hover': { bgcolor: '#f0f0f0' },
-                py: 1.5, // Padding vertikal lebih kecil
-                px: 2.0, // Padding horizontal lebih kecil
-                fontSize: '0.8rem', // Font lebih kecil
+                py: 1.5,
+                px: 2.0,
+                fontSize: '0.8rem',
               }}
             >
               Login
             </Button>
           )}
-          {/* --- Akhir Modifikasi Mobile --- */}
 
         </Box>
       </Toolbar>

@@ -117,7 +117,6 @@ const ServiceButton: React.FC<ServiceButtonProps> = ({ icon, label, onClick }) =
   </button>
 );
 
-// 4a. Kolom Kiri: Section Layanan
 const LayananSection: React.FC = () => {
   const navigate = useNavigate();
   
@@ -127,24 +126,46 @@ const LayananSection: React.FC = () => {
       
       {/* Grid 2x2 untuk 4 tombol pertama */}
       <div className="layanan-grid-2x2">
+        
+        {/* Tombol Lapor Kebakaran */}
         <ServiceButton 
-          onClick={() => navigate('/formulir-laporan')}
+          onClick={() => navigate('/formulir-laporan', { 
+            state: { 
+              formData: { // Struktur sesuai permintaan
+                jenisKejadian: 'Kebakaran' 
+              }
+            }
+          })}
           icon={<Flame size={36} />} 
           label="Lapor Kebakaran" 
         />
+
+        {/* Tombol Lapor Non Kebakaran */}
         <ServiceButton
-          onClick={() => navigate('/formulir-laporan')}
+          onClick={() => navigate('/formulir-laporan', { 
+            state: { 
+              formData: { // Struktur sesuai permintaan
+                jenisKejadian: 'Non Kebakaran' 
+              }
+            }
+          })}
           icon={<HelpCircle size={36} />}
           label="Lapor Non Kebakaran"
         />
+
+        {/* Tombol Lainnya (Tetap sama atau sesuaikan jika perlu) */}
         <ServiceButton
+          onClick={() => navigate('/grafik')} // Asumsi ada routenya
           icon={<BarChart size={36} />}
           label="Grafik Kejadian"
         />
+        
         <ServiceButton 
+          onClick={() => navigate('/daftar-kunjungan')} // Asumsi ada routenya
           icon={<Book size={36} />} 
           label="Daftar Kunjungan" 
         />
+        
       </div>
     </div>
   );
@@ -154,7 +175,7 @@ const LayananSection: React.FC = () => {
 const EdukasiCard: React.FC<{ item: EdukasiItem; isActive?: boolean }> = ({ item, isActive }) => {
   return (
     <RouterLink 
-      to={`/masyarakat/edukasi/detail/${item.id}`} 
+      to={`/edukasi/detail/${item.id}`} 
       className={`edukasi-card ${isActive ? 'active' : ''}`}
     > 
       <h3 className="card-title">{item.judul}</h3>
@@ -231,7 +252,7 @@ const EdukasiSection: React.FC<EdukasiSectionProps> = ({ data, loading, error })
         <h2 className="section-heading">Materi Edukasi</h2>
         
         {/* BARU: Link "Lihat Semua" dengan panah */}
-        <Link to="/masyarakat/edukasi/list" className="see-all-link">
+        <Link to="/edukasi/list" className="see-all-link">
           <span>Lihat Semua</span>
           <ArrowRightLeft size={18} />
         </Link>

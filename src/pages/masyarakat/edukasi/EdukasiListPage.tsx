@@ -88,7 +88,7 @@ const EdukasiListPage: React.FC = () => {
     <Container sx={{ py: 4, minHeight: '100vh', maxWidth: 'lg' }}>
       <Button
         component={Link}
-        to="/masyarakat/dashboard"
+        to="/"
         startIcon={<ArrowBackIcon />}
         sx={{ mb: 2 }}
       >
@@ -123,7 +123,7 @@ const EdukasiListPage: React.FC = () => {
               >
                 <CardActionArea
                   component={Link}
-                  to={`/masyarakat/edukasi/detail/${item.id}`}
+                  to={`/edukasi/detail/${item.id}`}
                   sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
                 >
                   <CardMedia

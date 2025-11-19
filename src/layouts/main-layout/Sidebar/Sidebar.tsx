@@ -80,6 +80,12 @@ const navItemsAdmin: NavItem[] = [
     collapsible: false,
   },
   {
+    title: 'Notifikasi',
+    path: `/${rootPaths.adminRoot}/${paths.adminNotifikasi}`,
+    icon: 'ion:notifications-sharp', // Ikon Lonceng (Gaya Sharp)
+    collapsible: false,
+ },
+  {
     title: 'Pengaturan',
     path: `/${rootPaths.adminRoot}/${paths.adminPengaturan}`,
     icon: 'ion:settings-sharp',

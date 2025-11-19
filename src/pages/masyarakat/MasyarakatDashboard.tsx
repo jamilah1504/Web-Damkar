@@ -16,6 +16,9 @@ import {
   ArrowRightLeft,
 } from 'lucide-react';
 import LaporButton from 'components/LaporButton';
+import MapCard from 'components/sections/dashboard/Home/Sales/MapCard/MapCard';
+import { Grid } from '@mui/material';
+
 
 // ======================================================
 // === DEFINISI TIPE DAN API CLIENT ===
@@ -317,6 +320,7 @@ const MasyarakatDashboard: React.FC = () => {
         loadingEdukasi={loadingEdukasi}
         errorEdukasi={errorEdukasi}
       />
+      <MapCard/>
     </div>
   );
 };

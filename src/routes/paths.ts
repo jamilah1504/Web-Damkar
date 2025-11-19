@@ -38,6 +38,8 @@ const paths = {
   masyarakatDetailLaporan: `laporan/detail/:id`,
   masyarakatAjukanKunjungan: 'ajukan-kunjungan',
   masyarakatFormulirLaporan: 'formulir-laporan',
+  masyarakatNotifikasi: 'notifikasi',
+  masyarakatGrafik: 'grafik',
 
   // --- Path Halaman Error ---
   unauthorized: '/unauthorized',

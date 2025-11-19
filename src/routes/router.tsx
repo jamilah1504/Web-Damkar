@@ -39,6 +39,8 @@ const MasyarakatFormulirLaporan = lazy(() => import('../pages/masyarakat/Laporan
 const MasyarakatLacakLaporan = lazy(() => import('../pages/masyarakat/laporan/RiwayatLaporan'));
 const MasyarakatDetailLaporan = lazy(() => import('../pages/masyarakat/laporan/DetailLaporan'));
 const MasyarakatAjukanKunjungan = lazy(() => import('../pages/masyarakat/InformasiPublik'));
+const MasyarakatNotifikasi = lazy(() => import('../pages/masyarakat/Notifikasi'));
+const MasyarakatGrafik = lazy(() => import('../pages/masyarakat/GrafikKejadian'));
 const PetugasTugasAktif = lazy(() => import('../pages/petugas/TugasAktif'));
 const PetugasRiwayat = lazy(() => import('../pages/petugas/RiwayatTugas'));
 const PetugasPeta = lazy(() => import('../pages/petugas/PetaOprasional'));
@@ -55,6 +57,21 @@ const routes: RouteObject[] = [
       { path: paths.masyarakatFormulirLaporan, element: 
         <MasyarakatLayout>
           <MasyarakatFormulirLaporan /> 
+        </MasyarakatLayout>
+      },
+      { path: paths.masyarakatGrafik, element: 
+        <MasyarakatLayout>
+          <MasyarakatGrafik /> 
+        </MasyarakatLayout>
+      },
+      { path: paths.masyarakatEdukasi, element: 
+        <MasyarakatLayout>
+          <MasyarakatEdukasi /> 
+        </MasyarakatLayout>
+      },
+      { path: paths.masyarakatEdukasiDetail, element: 
+        <MasyarakatLayout>
+          <MasyarakatEdukasiDetail /> 
         </MasyarakatLayout>
       },
       {
@@ -115,12 +132,11 @@ const routes: RouteObject[] = [
             children: [
               { index: true, element: <MasyarakatDashboard /> },
               { path: paths.masyarakatDashboard, element: <MasyarakatDashboard /> },
-              { path: paths.masyarakatEdukasi, element: <MasyarakatEdukasi /> },
-              { path: paths.masyarakatEdukasiDetail, element: <MasyarakatEdukasiDetail /> }, // TAMBAHKAN
               { path: paths.masyarakatBuatLaporan, element: <MasyarakatBuatLaporan /> },
               { path: paths.masyarakatLacakLaporan, element: <MasyarakatLacakLaporan /> },
               { path: paths.masyarakatDetailLaporan, element: <MasyarakatDetailLaporan /> },
               { path: paths.masyarakatAjukanKunjungan, element: <MasyarakatAjukanKunjungan /> },
+              { path: paths.masyarakatNotifikasi, element: <MasyarakatNotifikasi /> },
             ],
           },
         ],

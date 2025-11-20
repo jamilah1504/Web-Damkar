@@ -825,6 +825,38 @@ body {
   background-color: #fef2f2; /* hover:bg-red-50 */
 }
 
+/* Specific styles for DaftarKunjungan upload button */
+.daftar-kunjungan-upload {
+  width: 200%;
+  min-height: 150px;
+  padding: 2.5rem 1rem;
+  margin: 0.5rem 0;
+  border: 2px dashed #9ca3af;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.daftar-kunjungan-upload:hover {
+  border-color: #6b7280;
+  background-color: #f9fafb;
+}
+
+.daftar-kunjungan-upload .upload-icon {
+  color: #9ca3af;
+  margin-bottom: 1rem;
+  width: 32px;
+  height: 32px;
+}
+
+.daftar-kunjungan-upload .upload-text {
+  color: #4b5563;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
 .upload-icon {
   color: #9ca3af; /* text-gray-400 */
   margin-bottom: 0.5rem; /* mb-2 */

@@ -1,10 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, Upload, X } from 'lucide-react';
-import { format } from 'date-fns';
-import id from 'date-fns/locale/id';
-import api from '../../api';
+import axios from 'axios'; // IMPORT AXIOS
 import NotificationPopup from '../../components/NotificationPopup';
+
+// Fungsi untuk memformat tanggal ke bahasa Indonesia
+const formatDateToIndonesian = (dateString: string) => {
+  const date = new Date(dateString);
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Asia/Jakarta'
+  };
+  return new Intl.DateTimeFormat('id-ID', options).format(date);
+};
 
 interface FormDataState {
   namaSekolah: string;
@@ -78,7 +89,6 @@ const DaftarKunjungan: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
@@ -104,37 +114,50 @@ const DaftarKunjungan: React.FC = () => {
     setMediaFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  // --- FUNGSI YANG DIUBAH UNTUK KONEKSI KE DATABASE ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      // Validate form
+      // 1. Validasi Form
       if (!formData.namaSekolah || !formData.jumlahSiswa || !formData.tanggal || !formData.pjSekolah || !formData.kontakPj) {
         throw new Error('Harap lengkapi semua data yang diperlukan');
       }
       
-      // Validate phone number format (min 10 digits, max 15 digits, numbers only)
+      // Validasi format telepon
       const phoneRegex = /^[0-9]{10,15}$/;
       if (!phoneRegex.test(formData.kontakPj)) {
         throw new Error('Format nomor telepon tidak valid. Gunakan 10-15 digit angka.');
       }
 
+      // 2. Buat FormData
       const dataToSend = new FormData();
     
-    // Tambahkan data form ke FormData
-    Object.entries(formData).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        dataToSend.append(key, value);
-      }
-    });
+      // Append data text
+      dataToSend.append('namaSekolah', formData.namaSekolah);
+      dataToSend.append('jumlahSiswa', formData.jumlahSiswa);
+      dataToSend.append('tanggal', formData.tanggal);
+      dataToSend.append('pjSekolah', formData.pjSekolah);
+      dataToSend.append('kontakPj', formData.kontakPj);
 
-      // Uncomment this when your API is ready
-      // await api.post('/daftar-kunjungan', formDataToSend);
+      // Append file (Looping array mediaFiles)
+      // 'suratFiles' harus sama dengan di Backend: upload.array('suratFiles')
+      mediaFiles.forEach((file) => {
+        dataToSend.append('suratFiles', file); 
+      });
 
+      // 3. Kirim ke API (Ganti URL sesuai backend Anda)
+      const response = await axios.post('http://localhost:5000/api/kunjungan', dataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      // Jika berhasil
       setNotification({
         status: 'success',
-        message: 'Pendaftaran kunjungan berhasil diajukan!'
+        message: response.data.msg || 'Pendaftaran kunjungan berhasil diajukan!'
       });
 
       // Reset form
@@ -147,11 +170,20 @@ const DaftarKunjungan: React.FC = () => {
       });
       setMediaFiles([]);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gagal mengajukan pendaftaran:', error);
+      
+      // Penanganan pesan error yang lebih detail
+      let errorMessage = 'Terjadi kesalahan saat mengajukan pendaftaran';
+      if (error.response && error.response.data && error.response.data.msg) {
+        errorMessage = error.response.data.msg; // Pesan dari Backend
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       setNotification({
         status: 'error',
-        message: error instanceof Error ? error.message : 'Terjadi kesalahan saat mengajukan pendaftaran',
+        message: errorMessage,
       });
     } finally {
       setIsSubmitting(false);
@@ -163,7 +195,7 @@ const DaftarKunjungan: React.FC = () => {
   };
 
   const formattedDate = formData.tanggal 
-    ? format(new Date(formData.tanggal), 'EEEE, d MMMM yyyy', { locale: id })
+    ? formatDateToIndonesian(formData.tanggal)
     : 'Pilih tanggal kunjungan';
 
   return (
@@ -227,7 +259,7 @@ const DaftarKunjungan: React.FC = () => {
           <input
             type="tel"
             name="kontakPj"
-            placeholder="Kontak PJ (Nomor Telepon/WA)"
+            placeholder="Kontak PJ"
             value={formData.kontakPj}
             onChange={handleInputChange}
             className="form-input"

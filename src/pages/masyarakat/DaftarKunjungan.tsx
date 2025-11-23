@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, Upload, X } from 'lucide-react';
-import axios from 'axios'; // IMPORT AXIOS
+import axios from 'axios';
 import NotificationPopup from '../../components/NotificationPopup';
 
-// Fungsi untuk memformat tanggal ke bahasa Indonesia
+// Fungsi format tanggal
 const formatDateToIndonesian = (dateString: string) => {
   const date = new Date(dateString);
   const options: Intl.DateTimeFormatOptions = {
@@ -33,26 +33,12 @@ interface MediaPreviewProps {
 type NotificationStatus = 'success' | 'error' | 'pending' | null;
 
 const MediaPreview: React.FC<MediaPreviewProps> = ({ file, onRemove }) => {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  
-  useEffect(() => {
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [file]);
-
-  if (!previewUrl) return null;
-
   return (
     <div className="media-preview">
-      {file.type.startsWith('image/') ? (
-        <img src={previewUrl} alt={file.name} />
-      ) : (
         <div className="file-preview">
           <FileText size={24} />
-          <span>{file.name}</span>
+          <span className="file-name-truncate">{file.name}</span>
         </div>
-      )}
       <button
         onClick={onRemove}
         className="media-remove-button"
@@ -67,6 +53,7 @@ const MediaPreview: React.FC<MediaPreviewProps> = ({ file, onRemove }) => {
 const DaftarKunjungan: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [formData, setFormData] = useState<FormDataState>({
     namaSekolah: '',
     jumlahSiswa: '',
@@ -98,14 +85,10 @@ const DaftarKunjungan: React.FC = () => {
     if (e.target) e.target.value = '';
   };
 
-  const openFilePicker = (options: { accept: string; capture?: 'environment' | false }) => {
+  const openFilePicker = (options: { accept: string }) => {
     if (fileInputRef.current) {
       fileInputRef.current.accept = options.accept;
-      if (options.capture) {
-        fileInputRef.current.setAttribute('capture', String(options.capture));
-      } else {
-        fileInputRef.current.removeAttribute('capture');
-      }
+      fileInputRef.current.removeAttribute('capture');
       fileInputRef.current.click();
     }
   };
@@ -114,53 +97,65 @@ const DaftarKunjungan: React.FC = () => {
     setMediaFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  // --- FUNGSI YANG DIUBAH UNTUK KONEKSI KE DATABASE ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      // 1. Validasi Form
+      // --- [1. AMBIL TOKEN DARI LOCAL STORAGE] ---
+      // Pastikan key 'token' sesuai dengan yang Anda simpan saat Login
+      const token = localStorage.getItem('token'); 
+
+      if (!token) {
+        setNotification({
+            status: 'error',
+            message: 'Anda belum login. Silakan login terlebih dahulu.',
+        });
+        // Redirect ke login jika tidak ada token
+        setTimeout(() => navigate('/login'), 2000);
+        return;
+      }
+
+      // Validasi Input
       if (!formData.namaSekolah || !formData.jumlahSiswa || !formData.tanggal || !formData.pjSekolah || !formData.kontakPj) {
         throw new Error('Harap lengkapi semua data yang diperlukan');
       }
+
+      if (mediaFiles.length === 0) {
+        throw new Error('Wajib mengupload Surat Permohonan (PDF/Word)!');
+      }
       
-      // Validasi format telepon
       const phoneRegex = /^[0-9]{10,15}$/;
       if (!phoneRegex.test(formData.kontakPj)) {
         throw new Error('Format nomor telepon tidak valid. Gunakan 10-15 digit angka.');
       }
 
-      // 2. Buat FormData
+      // Buat FormData
       const dataToSend = new FormData();
-    
-      // Append data text
       dataToSend.append('namaSekolah', formData.namaSekolah);
       dataToSend.append('jumlahSiswa', formData.jumlahSiswa);
       dataToSend.append('tanggal', formData.tanggal);
       dataToSend.append('pjSekolah', formData.pjSekolah);
       dataToSend.append('kontakPj', formData.kontakPj);
 
-      // Append file (Looping array mediaFiles)
-      // 'suratFiles' harus sama dengan di Backend: upload.array('suratFiles')
       mediaFiles.forEach((file) => {
         dataToSend.append('suratFiles', file); 
       });
 
-      // 3. Kirim ke API (Ganti URL sesuai backend Anda)
+      // --- [2. KIRIM REQUEST DENGAN HEADER AUTHORIZATION] ---
       const response = await axios.post('http://localhost:5000/api/kunjungan', dataToSend, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}` // Backend butuh ini untuk tahu siapa req.user
         }
       });
 
-      // Jika berhasil
       setNotification({
         status: 'success',
         message: response.data.msg || 'Pendaftaran kunjungan berhasil diajukan!'
       });
 
-      // Reset form
+      // Reset Form
       setFormData({
         namaSekolah: '',
         jumlahSiswa: '',
@@ -172,11 +167,14 @@ const DaftarKunjungan: React.FC = () => {
 
     } catch (error: any) {
       console.error('Gagal mengajukan pendaftaran:', error);
-      
-      // Penanganan pesan error yang lebih detail
       let errorMessage = 'Terjadi kesalahan saat mengajukan pendaftaran';
-      if (error.response && error.response.data && error.response.data.msg) {
-        errorMessage = error.response.data.msg; // Pesan dari Backend
+      
+      // Handle Unauthorized (Token Expired/Invalid)
+      if (error.response && error.response.status === 401) {
+          errorMessage = "Sesi Anda telah berakhir. Silakan login kembali.";
+          setTimeout(() => navigate('/login'), 2000);
+      } else if (error.response && error.response.data && error.response.data.msg) {
+        errorMessage = error.response.data.msg;
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
@@ -220,7 +218,6 @@ const DaftarKunjungan: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="form-grid">
-        {/* Left Column - Form Inputs */}
         <div className="form-column">
           <input
             type="text"
@@ -293,33 +290,34 @@ const DaftarKunjungan: React.FC = () => {
           </button>
         </div>
 
-        {/* Right Column - File Upload */}
         <div className="form-column">
           <div className="card">
-            <h3 className="card-title">Upload Surat Permohonan</h3>
+            <h3 className="card-title">Upload Surat Permohonan <span style={{color:'red'}}>*</span></h3>
+            
             <input
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
               className="hidden-file-input"
               multiple
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              accept=".pdf,.doc,.docx"
               disabled={isSubmitting}
             />
+            
             <div className="upload-grid">
               <button
                 type="button"
                 onClick={() => openFilePicker({ 
-                  accept: 'image/*,.pdf,.doc,.docx',
-                  capture: 'environment' 
+                  accept: '.pdf,.doc,.docx'
                 })}
                 className="upload-button daftar-kunjungan-upload"
                 disabled={isSubmitting}
               >
                 <Upload size={32} className="upload-icon" />
-                <span className="upload-text">Surat Permohonan</span>
+                <span className="upload-text">Pilih File Dokumen (PDF/Word)</span>
               </button>
             </div>
+
             {mediaFiles.length > 0 && (
               <div className="preview-grid">
                 {mediaFiles.map((file, index) => (
@@ -331,6 +329,10 @@ const DaftarKunjungan: React.FC = () => {
                 ))}
               </div>
             )}
+            
+             <p style={{fontSize: '0.8rem', color: '#666', marginTop: '10px', textAlign: 'center'}}>
+              * Wajib upload file .pdf, .doc, atau .docx
+            </p>
           </div>
         </div>
       </form>

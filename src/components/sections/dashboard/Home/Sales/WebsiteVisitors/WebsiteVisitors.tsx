@@ -22,12 +22,12 @@ const WebsiteVisitors = (): ReactElement => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Mengambil data laporan dari API
-        const response = await api.get('/reports');
+        // Mengambil data dari tabel insiden
+        const response = await api.get('/insiden');
         
         // Menghitung jumlah kejadian kebakaran dan non-kebakaran
-        const kebakaran = response.data.filter((laporan: any) => 
-          laporan.jenisKejadian && laporan.jenisKejadian.toLowerCase().includes('kebakaran')
+        const kebakaran = response.data.filter((insiden: any) => 
+          insiden.jenisKejadian && insiden.jenisKejadian.toLowerCase().includes('kebakaran')
         ).length;
         
         const nonKebakaran = response.data.length - kebakaran;

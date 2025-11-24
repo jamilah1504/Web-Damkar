@@ -147,6 +147,7 @@ const LayananSection: React.FC = () => {
           label="Grafik Kejadian"
         />
         <ServiceButton 
+          onClick={() => navigate('/daftar-kunjungan')}
           icon={<Book size={36} />} 
           label="Daftar Kunjungan" 
         />

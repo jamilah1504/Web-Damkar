@@ -28,7 +28,7 @@ import {
   InputLabel,
   SelectChangeEvent,
   TextField,
-  Autocomplete, // <-- (BARU) Import Autocomplete
+  Autocomplete,
 } from '@mui/material';
 import {
   KeyboardArrowDown as KeyboardArrowDownIcon,
@@ -96,6 +96,21 @@ const modalStyle = {
   overflowY: 'auto',
 };
 
+// --- Helper untuk Warna Status ---
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'Penanganan':
+      return 'warning'; // Kuning/Oranye
+    case 'Selesai':
+      return 'success'; // Hijau
+    case 'Ditolak':
+      return 'error';   // Merah (BARU)
+    case 'Investigasi':
+    default:
+      return 'default'; // Abu-abu
+  }
+};
+
 // --- Props untuk Row ---
 interface RowProps {
   row: IInsidenData;
@@ -124,7 +139,6 @@ function Row(props: RowProps) {
   } = props;
   const [open, setOpen] = useState(false);
 
-  // Fungsi Hapus Laporan
   const handleHapusLaporan = async (laporanId: number) => {
     if (!window.confirm("Anda yakin ingin menghapus laporan ini? Ini akan menghapus file terkait.")) {
       return;
@@ -167,7 +181,8 @@ function Row(props: RowProps) {
         <TableCell>
           <Chip 
             label={row.statusInsiden} 
-            color={row.statusInsiden === 'Penanganan' ? 'warning' : (row.statusInsiden === 'Selesai' ? 'success' : 'default')} 
+            // UPDATE: Menggunakan helper function warna baru
+            color={getStatusColor(row.statusInsiden)} 
             size="small" 
           />
         </TableCell>
@@ -202,6 +217,7 @@ function Row(props: RowProps) {
                   row.Laporans.map((laporan) => (
                     <Grid item xs={12} sm={6} md={4} key={laporan.id}>
                       <Card sx={{ display: 'flex', height: '100%' }}>
+                        
                         { (laporan.Dokumentasis && laporan.Dokumentasis.length > 0) ? (
                           laporan.Dokumentasis[0].tipeFile === 'Gambar' ? (
                             <CardMedia
@@ -297,7 +313,12 @@ function Row(props: RowProps) {
               <Box sx={{ mt: 4 }}>
                 <Typography variant="h6" gutterBottom>Status Insiden</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Chip label={row.statusInsiden} color={row.statusInsiden === 'Penanganan' ? 'warning' : (row.statusInsiden === 'Selesai' ? 'success' : 'default')} />
+                  <Chip 
+                    label={row.statusInsiden} 
+                    // UPDATE: Warna status ditolak = merah
+                    color={getStatusColor(row.statusInsiden)}
+                    size="small" 
+                    />
                   <Button 
                     variant="outlined" 
                     startIcon={<EditIcon />} 
@@ -319,18 +340,17 @@ function Row(props: RowProps) {
 
 // --- Komponen Utama (Page) ---
 const AdminLaporanMasuk: React.FC = () => {
-  // --- State ---
   const [dataInsiden, setDataInsiden] = useState<IInsidenData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // State Modal Status
+  // Modal Status
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [currentInsiden, setCurrentInsiden] = useState<IInsidenData | null>(null);
   const [newStatus, setNewStatus] = useState<string>('');
 
-  // State Modal Detail & Edit
+  // Modal Detail & Edit
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedLaporan, setSelectedLaporan] = useState<ILaporan | null>(null);
   const [isEditingLaporan, setIsEditingLaporan] = useState(false); 
@@ -341,7 +361,7 @@ const AdminLaporanMasuk: React.FC = () => {
     deskripsi: '',
   });
 
-  // State Modal Tambah Laporan
+  // Modal Tambah Laporan
   const [tambahLaporanModalOpen, setTambahLaporanModalOpen] = useState(false);
   const [selectedInsidenId, setSelectedInsidenId] = useState<number | null>(null);
   const [laporanForm, setLaporanForm] = useState({
@@ -350,18 +370,14 @@ const AdminLaporanMasuk: React.FC = () => {
     deskripsi: '',
   });
   const [laporanFiles, setLaporanFiles] = useState<File[]>([]);
-  
-  // State untuk Edit Laporan
   const [editingLaporanId, setEditingLaporanId] = useState<number | null>(null);
 
-  // --- State untuk Modal Tambah Petugas ---
+  // Modal Tambah Petugas
   const [tambahPetugasModalOpen, setTambahPetugasModalOpen] = useState(false);
   const [petugasList, setPetugasList] = useState<IUserSimple[]>([]);
-  
-  // --- (MODIFIKASI) State untuk MULTIPLE SELECT ---
   const [selectedPetugasList, setSelectedPetugasList] = useState<IUserSimple[]>([]);
 
-  // --- Fungsi Fetch Data Insiden ---
+  // Fetch Data
   const fetchData = async () => {
     try {
       setLoading(true); 
@@ -381,7 +397,6 @@ const AdminLaporanMasuk: React.FC = () => {
     }
   };
 
-  // --- Fungsi Fetch Daftar Petugas ---
   const fetchPetugasList = async () => {
     try {
       const response = await fetch('http://localhost:5000/api/users/petugas-only', {
@@ -401,10 +416,10 @@ const AdminLaporanMasuk: React.FC = () => {
   }, []); 
 
 
-  // --- Handlers Modal Tambah Petugas ---
+  // Handlers Modal Tambah Petugas
   const handleOpenTambahPetugasModal = (insidenId: number) => {
     setSelectedInsidenId(insidenId);
-    setSelectedPetugasList([]); // Reset pilihan
+    setSelectedPetugasList([]);
     setTambahPetugasModalOpen(true);
   };
 
@@ -421,7 +436,6 @@ const AdminLaporanMasuk: React.FC = () => {
     }
     setIsSubmitting(true);
     
-    // Ambil ID dari list object
     const petugasIds = selectedPetugasList.map(user => user.id);
 
     try {
@@ -433,7 +447,7 @@ const AdminLaporanMasuk: React.FC = () => {
         },
         body: JSON.stringify({
           insidenId: selectedInsidenId,
-          petugasIds: petugasIds // Kirim Array ID
+          petugasIds: petugasIds
         })
       });
       
@@ -452,7 +466,6 @@ const AdminLaporanMasuk: React.FC = () => {
     }
   };
 
-  // --- Handler Hapus Petugas ---
   const handleHapusPetugas = async (insidenId: number, petugasId: number) => {
     try {
       const response = await fetch('http://localhost:5000/api/tugas/remove-petugas', {
@@ -477,7 +490,7 @@ const AdminLaporanMasuk: React.FC = () => {
   };
 
 
-  // --- Handlers Modal Status ---
+  // Handlers Modal Status
   const handleOpenStatusModal = (insiden: IInsidenData) => {
     setCurrentInsiden(insiden); 
     setNewStatus(insiden.statusInsiden); 
@@ -513,7 +526,7 @@ const AdminLaporanMasuk: React.FC = () => {
     }
   };
 
-  // --- Handlers Modal Detail & Edit Laporan ---
+  // Handlers Modal Detail & Edit Laporan
   const handleOpenDetailModal = (laporan: ILaporan) => {
     setSelectedLaporan(laporan);
     setEditLaporanForm({
@@ -609,8 +622,6 @@ const AdminLaporanMasuk: React.FC = () => {
     }
   };
 
-
-  // --- Handlers Modal Tambah Laporan ---
   const handleOpenTambahLaporanModal = (insidenId: number) => {
     setSelectedInsidenId(insidenId);
     setLaporanForm({ namaPelapor: '', alamatKejadian: '', deskripsi: '' });
@@ -683,7 +694,6 @@ const AdminLaporanMasuk: React.FC = () => {
     }
   };
 
-
   if (loading) {
     return (
       <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
@@ -741,7 +751,7 @@ const AdminLaporanMasuk: React.FC = () => {
         </Table>
       </TableContainer>
 
-      {/* --- Modal Edit Status --- */}
+      {/* --- Modal Edit Status (SUDAH DITAMBAH OPSI DITOLAK) --- */}
       <Modal open={statusModalOpen} onClose={handleCloseStatusModal} closeAfterTransition BackdropComponent={Backdrop} BackdropProps={{ timeout: 500 }} >
         <Fade in={statusModalOpen}>
           <Box sx={modalStyle}>
@@ -767,6 +777,8 @@ const AdminLaporanMasuk: React.FC = () => {
                 <MenuItem value="Investigasi">Investigasi</MenuItem>
                 <MenuItem value="Penanganan">Penanganan</MenuItem>
                 <MenuItem value="Selesai">Selesai</MenuItem>
+                {/* --- (BARU) Status Ditolak --- */}
+                <MenuItem value="Ditolak" sx={{ color: 'error.main' }}>Ditolak</MenuItem>
               </Select>
             </FormControl>
             <Button
@@ -884,7 +896,7 @@ const AdminLaporanMasuk: React.FC = () => {
                       sx={{ mb: 2 }}
                     />
 
-                    {/* --- (BARU) TOMBOL UPLOAD SAAT EDIT --- */}
+                    {/* --- TOMBOL UPLOAD SAAT EDIT --- */}
                     <Button
                         variant="outlined"
                         component="label" 
@@ -982,7 +994,6 @@ const AdminLaporanMasuk: React.FC = () => {
         </Fade>
       </Modal>
 
-
       {/* --- Modal Tambah Laporan --- */}
       <Modal
         open={tambahLaporanModalOpen}
@@ -1074,7 +1085,7 @@ const AdminLaporanMasuk: React.FC = () => {
         </Fade>
       </Modal>
 
-      {/* --- (BARU) Modal Tambah Petugas (MULTIPLE & SEARCH) --- */}
+      {/* --- Modal Tambah Petugas (MULTIPLE & SEARCH) --- */}
       <Modal
         open={tambahPetugasModalOpen}
         onClose={handleCloseTambahPetugasModal}

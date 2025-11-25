@@ -11,7 +11,7 @@ import {
   Grid,
   CircularProgress,
   Alert,
-  Avatar, // <-- BARU: Untuk menampilkan pelapor
+  Avatar,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -20,41 +20,41 @@ import {
   CheckCircle as CheckIcon,
   Cancel as CancelIcon,
   Warning as WarningIcon,
-  Person as PersonIcon, // <-- BARU: Ikon pelapor
-  Info as InfoIcon, // <-- BARU: Ikon insiden
+  Person as PersonIcon,
+  Info as InfoIcon,
+  Description as DescriptionIcon,
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+// Sesuaikan base URL Anda
 const apiClient = axios.create({ baseURL: 'http://localhost:5000/api' });
 
-// --- (TIDAK BERUBAH) ---
+// --- HELPER: Membersihkan URL Gambar ---
+const getCleanImageUrl = (path: string) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  const cleanPath = path.replace(/^\/?uploads\//, '');
+  return `http://localhost:5000/uploads/${cleanPath}`;
+};
+
+// --- HELPER: Format Rupiah ---
+const formatRupiah = (angka: number) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+  }).format(angka);
+};
+
+// --- INTERFACES ---
 interface LaporanLapanganType {
   jumlahKorban: number;
   estimasiKerugian: number | null;
   dugaanPenyebab: string | null;
   catatan: string | null;
 }
-const formatDate = (date: string) =>
-  new Date(date).toLocaleString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-const getStatusConfig = (status: string) => {
-  const configs = {
-    Selesai: { color: 'success' as const, icon: CheckIcon, label: 'Selesai' },
-    Ditolak: { color: 'error' as const, icon: CancelIcon, label: 'Ditolak' },
-    Diproses: { color: 'warning' as const, icon: WarningIcon, label: 'Diproses' },
-    'Menunggu Verifikasi': { color: 'info' as const, icon: WarningIcon, label: 'Menunggu' },
-  };
-  return configs[status as keyof typeof configs] || configs['Menunggu Verifikasi'];
-};
-// --- (AKHIR TIDAK BERUBAH) ---
 
-// === PERBAIKAN 1: Perbarui Interface Laporan ===
 interface Pelapor {
   id: number;
   name: string;
@@ -66,6 +66,11 @@ interface InsidenTerkait {
   judulInsiden: string;
   skalaInsiden: string;
   statusInsiden: string;
+  // Hapus kurung siku [] di akhir
+  Tugas?: { 
+    id: number;
+    laporanLapangan?: LaporanLapanganType;
+  }; 
 }
 
 interface Laporan {
@@ -77,14 +82,30 @@ interface Laporan {
   longitude?: number | null;
   status: 'Menunggu Verifikasi' | 'Diproses' | 'Selesai' | 'Ditolak';
   timestampDibuat: string;
-  // Perbaikan nama field (D besar dan 's')
   Dokumentasis: { fileUrl: string; tipeFile: string }[]; 
-  insiden?: { tugas?: { laporanLapangan?: LaporanLapanganType | null }[] } | null;
-  // Tambahkan field yang hilang
   Pelapor: Pelapor | null;
-  Petugas: any | null; // (Bisa didefinisikan lebih detail jika perlu)
+  Petugas: any | null;
   InsidenTerkait: InsidenTerkait | null;
 }
+
+const formatDate = (date: string) =>
+  new Date(date).toLocaleString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+const getStatusConfig = (status: string) => {
+  const configs = {
+    Selesai: { color: 'success' as const, icon: CheckIcon, label: 'Selesai' },
+    Ditolak: { color: 'error' as const, icon: CancelIcon, label: 'Ditolak' },
+    Diproses: { color: 'warning' as const, icon: WarningIcon, label: 'Diproses' },
+    'Menunggu Verifikasi': { color: 'info' as const, icon: WarningIcon, label: 'Menunggu' },
+  };
+  return configs[status as keyof typeof configs] || configs['Menunggu Verifikasi'];
+};
 
 const MasyarakatDetailLaporan: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -100,7 +121,8 @@ const MasyarakatDetailLaporan: React.FC = () => {
         const response = await apiClient.get(`/reports/${id}`);
         const data = response.data;
 
-        // === PERBAIKAN 2: Mapping data yang lengkap ===
+        console.log("DATA DARI BACKEND:", data); // Debugging
+
         setLaporan({
           id: data.id,
           jenisKejadian: data.jenisKejadian,
@@ -110,15 +132,15 @@ const MasyarakatDetailLaporan: React.FC = () => {
           longitude: data.longitude,
           status: data.status,
           timestampDibuat: data.timestampDibuat,
-          // Perbaikan mapping field
           Dokumentasis: data.Dokumentasis || [],
-          insiden: data.insiden || null,
-          // Tambahkan mapping field yang hilang
           Pelapor: data.Pelapor || null,
           Petugas: data.Petugas || null,
-          InsidenTerkait: data.InsidenTerkait || null,
+          
+          // Pastikan InsidenTerkait diambil utuh
+          InsidenTerkait: data.InsidenTerkait || null, 
         });
       } catch (err: any) {
+        console.error(err);
         setError(err.response?.data?.message || 'Gagal memuat detail laporan');
       } finally {
         setLoading(false);
@@ -128,7 +150,6 @@ const MasyarakatDetailLaporan: React.FC = () => {
     if (id) fetchLaporan();
   }, [id]);
 
-  // --- (Render Loading & Error tidak berubah) ---
   if (loading) {
     return (
       <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', minHeight: '100vh', alignItems: 'center' }}>
@@ -151,12 +172,19 @@ const MasyarakatDetailLaporan: React.FC = () => {
   }
 
   const statusConfig = getStatusConfig(laporan.status);
-  const laporanLapangan = laporan.insiden?.tugas?.[0]?.laporanLapangan;
+
+  // --- LOGIKA EKSTRAKSI LAPORAN LAPANGAN ---
+  // 1. Cek apakah ada Insiden Terkait
+  // 2. Cek apakah Insiden punya Tugas (minimal 1)
+  // 3. Cek apakah Tugas pertama punya laporanLapangan
+  // (Karena struktur backend: Insiden -> Tugas[] -> laporanLapangan)
+  const laporanLapangan = laporan.InsidenTerkait?.Tugas?.laporanLapangan;
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#F8F9FA', minHeight: '100vh' }}>
+      {/* Header */}
       <Stack direction="row" alignItems="center" spacing={2} mb={4}>
-        <IconButton onClick={() => navigate(-1)}>
+        <IconButton onClick={() => navigate(-1)} sx={{ bgcolor: 'white', boxShadow: 1 }}>
           <ArrowBackIcon sx={{ color: 'black' }} />
         </IconButton>
         <Typography variant="h4" fontWeight={700} color="#333">
@@ -167,7 +195,7 @@ const MasyarakatDetailLaporan: React.FC = () => {
       <Grid container spacing={4}>
         {/* === KOLOM KIRI (Info Utama) === */}
         <Grid item xs={12} lg={8}>
-          <Paper sx={{ p: 4, borderRadius: 3, boxShadow: 3, bgcolor: 'white' }}>
+          <Paper sx={{ p: 4, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', bgcolor: 'white' }}>
             <Stack spacing={3}>
               {/* Judul & Tanggal */}
               <Box>
@@ -175,18 +203,18 @@ const MasyarakatDetailLaporan: React.FC = () => {
                   {laporan.jenisKejadian}
                 </Typography>
                 <Chip
-                  icon={<CalendarIcon />}
+                  icon={<CalendarIcon sx={{ fontSize: 16 }} />}
                   label={formatDate(laporan.timestampDibuat)}
                   size="small"
-                  sx={{ mt: 1 }}
+                  sx={{ mt: 1, bgcolor: '#f5f5f5', fontWeight: 500 }}
                 />
               </Box>
               <Divider />
 
               {/* Deskripsi */}
               <Box>
-                <Typography variant="h6" fontWeight={600} mb={1}>
-                  Deskripsi
+                <Typography variant="h6" fontWeight={600} mb={1} display="flex" alignItems="center" gap={1}>
+                  <DescriptionIcon color="action" fontSize="small"/> Deskripsi
                 </Typography>
                 <Typography variant="body1" sx={{ lineHeight: 1.8, color: 'text.secondary', whiteSpace: 'pre-wrap' }}>
                   {laporan.deskripsi || 'Tidak ada deskripsi.'}
@@ -195,19 +223,19 @@ const MasyarakatDetailLaporan: React.FC = () => {
 
               {/* Lokasi */}
               <Box>
-                <Typography variant="h6" fontWeight={600} mb={1}>
-                  Lokasi
+                <Typography variant="h6" fontWeight={600} mb={1} display="flex" alignItems="center" gap={1}>
+                  <LocationOnIcon color="error" fontSize="small" /> Lokasi
                 </Typography>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <LocationOnIcon color="primary" />
-                  <Typography>{laporan.alamatKejadian || 'Lokasi GPS'}</Typography>
-                </Stack>
+                <Typography variant="body1" color="text.primary" mb={1}>
+                  {laporan.alamatKejadian || 'Lokasi GPS'}
+                </Typography>
+                
                 {laporan.latitude && laporan.longitude && (
                   <Button
                     variant="outlined"
                     size="small"
                     startIcon={<LocationOnIcon />}
-                    sx={{ mt: 1.5, borderRadius: 2 }}
+                    sx={{ borderRadius: 2, textTransform: 'none' }}
                     onClick={() =>
                       window.open(
                         `https://www.google.com/maps/search/?api=1&query=${laporan.latitude},${laporan.longitude}`,
@@ -215,7 +243,7 @@ const MasyarakatDetailLaporan: React.FC = () => {
                       )
                     }
                   >
-                    Buka Peta
+                    Lihat di Google Maps
                   </Button>
                 )}
               </Box>
@@ -223,13 +251,13 @@ const MasyarakatDetailLaporan: React.FC = () => {
               {/* Status Laporan */}
               <Box>
                 <Typography variant="h6" fontWeight={600} mb={1}>
-                  Status Laporan Anda
+                  Status Terkini
                 </Typography>
                 <Chip
                   icon={<statusConfig.icon />}
                   label={statusConfig.label}
                   color={statusConfig.color}
-                  sx={{ fontWeight: 600, fontSize: '1rem', p: 1 }}
+                  sx={{ fontWeight: 600, fontSize: '1rem', p: 1.5, borderRadius: 2 }}
                 />
               </Box>
             </Stack>
@@ -238,13 +266,13 @@ const MasyarakatDetailLaporan: React.FC = () => {
 
         {/* === KOLOM KANAN (Info Terkait & Hasil) === */}
         <Grid item xs={12} lg={4}>
-          <Stack spacing={4}>
+          <Stack spacing={3}>
             
-            {/* === PERBAIKAN 4: Tampilkan Info Pelapor & Insiden === */}
+            {/* Card 1: Info Pelapor & Insiden */}
             {(laporan.Pelapor || laporan.InsidenTerkait) && (
-              <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 3, bgcolor: 'white' }}>
+              <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', bgcolor: 'white' }}>
                 <Typography variant="h6" fontWeight={700} mb={2} color="#333">
-                  Detail Terkait
+                  Informasi Tambahan
                 </Typography>
                 <Stack spacing={2.5}>
                   {laporan.Pelapor && (
@@ -253,8 +281,8 @@ const MasyarakatDetailLaporan: React.FC = () => {
                         <PersonIcon />
                       </Avatar>
                       <Box>
-                        <Typography variant="body2" color="text.secondary" sx={{lineHeight: 1.2}}>
-                          Pelapor
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                          PELAPOR
                         </Typography>
                         <Typography variant="body1" fontWeight={600}>
                           {laporan.Pelapor.name}
@@ -268,13 +296,13 @@ const MasyarakatDetailLaporan: React.FC = () => {
                         <InfoIcon />
                       </Avatar>
                       <Box>
-                        <Typography variant="body2" color="text.secondary" sx={{lineHeight: 1.2}}>
-                          Insiden Terkait
+                        <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                          INSIDEN TERKAIT
                         </Typography>
                         <Typography variant="body1" fontWeight={600}>
                           {laporan.InsidenTerkait.statusInsiden}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.2 }}>
                           {laporan.InsidenTerkait.judulInsiden}
                         </Typography>
                       </Box>
@@ -284,14 +312,16 @@ const MasyarakatDetailLaporan: React.FC = () => {
               </Paper>
             )}
 
-            {/* Laporan Lapangan (Kode Asli Anda) */}
+            {/* Card 2: Laporan Lapangan (HASIL KERJA PETUGAS) */}
             <Paper
               sx={{
                 p: 3,
                 borderRadius: 3,
-                boxShadow: 3,
-                bgcolor: laporanLapangan ? '#E8F5E9' : '#FFF3E0',
-                border: laporanLapangan ? '1px solid #4CAF50' : '1px solid #FF9800',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                // Logika Warna Background & Border
+                bgcolor: laporanLapangan ? '#F1F8E9' : '#FFF8E1', // Hijau Muda vs Oranye Muda
+                border: '1px solid',
+                borderColor: laporanLapangan ? '#81C784' : '#FFB74D', // Hijau vs Oranye
               }}
             >
               <Typography
@@ -299,33 +329,38 @@ const MasyarakatDetailLaporan: React.FC = () => {
                 fontWeight={700}
                 mb={2}
                 color={laporanLapangan ? 'success.main' : 'warning.main'}
+                display="flex"
+                alignItems="center"
+                gap={1}
               >
-                {laporanLapangan ? 'Hasil Penanganan' : 'Belum Ada Laporan Lapangan'}
+                {laporanLapangan ? <CheckIcon/> : <WarningIcon/>}
+                {laporanLapangan ? 'Laporan Lapangan (Selesai)' : 'Belum Ada Laporan Lapangan'}
               </Typography>
+              
               {laporanLapangan ? (
-                <Stack spacing={2}>
+                <Stack spacing={2} divider={<Divider sx={{ borderStyle: 'dashed' }} />}>
                   <Box>
-                    <Typography variant="body2" fontWeight={600}>Korban</Typography>
+                    <Typography variant="body2" fontWeight={600} color="text.secondary">Jumlah Korban</Typography>
                     <Typography variant="h6">{laporanLapangan.jumlahKorban} orang</Typography>
                   </Box>
-                  {laporanLapangan.estimasiKerugian && (
+                  {laporanLapangan.estimasiKerugian !== null && (
                     <Box>
-                      <Typography variant="body2" fontWeight={600}>Kerugian</Typography>
-                      <Typography variant="h6">
-                        Rp {laporanLapangan.estimasiKerugian.toLocaleString('id-ID')}
+                      <Typography variant="body2" fontWeight={600} color="text.secondary">Estimasi Kerugian</Typography>
+                      <Typography variant="h6" color="error.main">
+                        {formatRupiah(laporanLapangan.estimasiKerugian)}
                       </Typography>
                     </Box>
                   )}
                   {laporanLapangan.dugaanPenyebab && (
                     <Box>
-                      <Typography variant="body2" fontWeight={600}>Penyebab</Typography>
-                      <Typography variant="body1">"{laporanLapangan.dugaanPenyebab}"</Typography>
+                      <Typography variant="body2" fontWeight={600} color="text.secondary">Dugaan Penyebab</Typography>
+                      <Typography variant="body1" fontWeight={500}>"{laporanLapangan.dugaanPenyebab}"</Typography>
                     </Box>
                   )}
                   {laporanLapangan.catatan && (
                     <Box>
-                      <Typography variant="body2" fontWeight={600}>Catatan</Typography>
-                      <Typography variant="body1" sx={{ fontStyle: 'italic' }}>
+                      <Typography variant="body2" fontWeight={600} color="text.secondary">Catatan Petugas</Typography>
+                      <Typography variant="body2" sx={{ fontStyle: 'italic', mt: 0.5 }}>
                         "{laporanLapangan.catatan}"
                       </Typography>
                     </Box>
@@ -333,7 +368,7 @@ const MasyarakatDetailLaporan: React.FC = () => {
                 </Stack>
               ) : (
                 <Typography variant="body2" color="text.secondary">
-                  Petugas belum mengirimkan laporan lapangan.
+                  Petugas damkar belum mengisi laporan hasil penanganan di lapangan. Mohon tunggu hingga proses selesai.
                 </Typography>
               )}
             </Paper>
@@ -341,11 +376,11 @@ const MasyarakatDetailLaporan: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* === PERBAIKAN 5: Tampilkan Dokumentasi (Gambar & Video) === */}
+      {/* === DOKUMENTASI (Gallery) === */}
       {laporan.Dokumentasis.length > 0 && (
         <Box sx={{ mt: 5 }}>
           <Typography variant="h5" fontWeight={700} mb={3} color="#333">
-            Dokumentasi
+            Dokumentasi Bukti
           </Typography>
           <Grid container spacing={2}>
             {laporan.Dokumentasis.map((doc, idx) => (
@@ -356,23 +391,23 @@ const MasyarakatDetailLaporan: React.FC = () => {
                     borderRadius: 2,
                     overflow: 'hidden',
                     cursor: 'pointer',
-                    '&:hover': { transform: 'scale(1.03)', boxShadow: 6 },
+                    '&:hover': { transform: 'scale(1.02)', boxShadow: 4 },
                     transition: 'all 0.3s ease',
                   }}
-                  onClick={() => window.open(`http://localhost:5000/uploads/${doc.fileUrl}`, '_blank')}
+                  onClick={() => window.open(getCleanImageUrl(doc.fileUrl), '_blank')}
                 >
-                  {/* Cek Tipe File! */}
+                  {/* Cek Tipe File */}
                   {doc.tipeFile === 'Gambar' ? (
                     <Box
                       component="img"
-                      src={`http://localhost:5000/uploads/${doc.fileUrl}`}
+                      src={getCleanImageUrl(doc.fileUrl)}
                       alt={`Bukti ${idx + 1}`}
                       sx={{ width: '100%', height: 200, objectFit: 'cover' }}
                     />
                   ) : doc.tipeFile === 'Video' ? (
                     <Box
                       component="video"
-                      src={`http://localhost:5000/uploads/${doc.fileUrl}`}
+                      src={getCleanImageUrl(doc.fileUrl)}
                       sx={{ width: '100%', height: 200, objectFit: 'cover' }}
                       controls
                     />
@@ -383,7 +418,12 @@ const MasyarakatDetailLaporan: React.FC = () => {
                   )}
                   
                   <Box sx={{ p: 1.5, textAlign: 'center', bgcolor: 'white' }}>
-                    <Typography variant="body2" fontWeight={500}>{doc.tipeFile} {idx + 1}</Typography>
+                    <Chip 
+                      label={doc.tipeFile} 
+                      size="small" 
+                      color={doc.tipeFile === 'Video' ? 'error' : 'primary'} 
+                      variant="outlined"
+                    />
                   </Box>
                 </Paper>
               </Grid>

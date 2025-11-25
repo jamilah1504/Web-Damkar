@@ -7,20 +7,13 @@ import {
   CircularProgress,
   Alert,
   Grid,
-  Card, // Tetap digunakan, tapi di-style ulang
+  Card,
   CardContent,
   CardMedia,
   Stack,
   Chip,
   TextField,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  Avatar,
-  InputAdornment, // Ditambahkan untuk ikon di TextField
 } from '@mui/material';
 import {
   LocationOn as LocationOnIcon,
@@ -28,13 +21,20 @@ import {
   Cancel as CancelIcon,
   Visibility as VisibilityIcon,
   CalendarToday as CalendarIcon,
-  Close as CloseIcon,
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-// useAuth (Tidak diubah)
+// --- FUNGSI HELPER URL GAMBAR (PERBAIKAN UTAMA) ---
+const getCleanImageUrl = (path: string) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  // Hapus prefix '/uploads/' atau 'uploads/' jika sudah ada di database
+  const cleanPath = path.replace(/^\/?uploads\//, '');
+  return `http://localhost:5000/uploads/${cleanPath}`;
+};
+
 const useAuth = () => {
   const [user, setUser] = React.useState<{ id?: number } | null>(() => {
     try {
@@ -66,7 +66,7 @@ const apiClient = axios.create({
   baseURL: 'http://localhost:5000/api',
 });
 
-// === INTERFACES === (Tidak diubah)
+// === INTERFACES ===
 interface LaporanLapanganType {
   jumlahKorban: number;
   estimasiKerugian: number | null;
@@ -88,7 +88,7 @@ interface Laporan {
   insiden?: { tugas?: { laporanLapangan?: LaporanLapanganType | null }[] } | null;
 }
 
-// === HELPER === (Tidak diubah)
+// === HELPER ===
 const formatDate = (date: string) =>
   new Date(date).toLocaleString('id-ID', {
     day: 'numeric',
@@ -119,12 +119,10 @@ const MasyarakatLacakLaporan: React.FC = () => {
   const [filteredList, setFilteredList] = useState<Laporan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [filterJenis, setFilterJenis] = useState('');
   const [filterTanggal, setFilterTanggal] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
-  // Fetch Data (Tidak diubah)
   useEffect(() => {
     if (!user?.id) {
       setError('Silakan login terlebih dahulu.');
@@ -166,7 +164,6 @@ const MasyarakatLacakLaporan: React.FC = () => {
     fetchReports();
   }, [user?.id]);
 
-  // Filter (Tidak diubah)
   useEffect(() => {
     let filtered = allReports;
     if (filterJenis)
@@ -181,14 +178,12 @@ const MasyarakatLacakLaporan: React.FC = () => {
     setFilteredList(filtered);
   }, [filterJenis, filterTanggal, filterStatus, allReports]);
 
-
-  // Didefinisikan di sini untuk digunakan dalam map
   const PlaceholderBox = () => (
     <Box
       sx={{
-        height: 140, // Samakan tinggi dengan CardMedia
+        height: 140,
         borderRadius: 2,
-        bgcolor: '#F0F0F0', // Warna abu-abu solid seperti desain
+        bgcolor: '#F0F0F0',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -223,13 +218,10 @@ const MasyarakatLacakLaporan: React.FC = () => {
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#F8F9FA', minHeight: '100vh' }}>
-      {/* HEADER */}
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={4}>
-        {/* *** STYLING CHANGE: Judul Halaman *** */}
         <Typography variant="h4" fontWeight={600} color="#333">
           Riwayat Laporan
         </Typography>
-        {/* *** STYLING CHANGE: Chip Jumlah Laporan *** */}
         <Chip
           label={`${filteredList.length} Laporan`}
           sx={{
@@ -237,8 +229,8 @@ const MasyarakatLacakLaporan: React.FC = () => {
             fontSize: '0.9rem',
             px: 2,
             py: 2,
-            borderRadius: 2, // 8px
-            bgcolor: '#dc2626', // Orange dari desain
+            borderRadius: 2,
+            bgcolor: '#dc2626',
             color: 'white',
           }}
         />
@@ -253,15 +245,14 @@ const MasyarakatLacakLaporan: React.FC = () => {
       <Grid container spacing={4}>
         {/* FILTER */}
         <Grid item xs={12} lg={4}>
-          {/* *** STYLING CHANGE: Filter Card *** */}
           <Paper
             variant="outlined"
             sx={{
               p: 3,
-              borderRadius: 2, // 8px
+              borderRadius: 2,
               bgcolor: 'white',
               borderColor: '#E0E0E0',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.05)', // Shadow lebih halus
+              boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
             }}
           >
             <Typography variant="h6" fontWeight={700} mb={3} color="#333">
@@ -282,13 +273,10 @@ const MasyarakatLacakLaporan: React.FC = () => {
                 label="Tanggal"
                 type="date"
                 size="medium"
-                InputLabelProps={{ shrink: true }} // Ini penting untuk type="date"
+                InputLabelProps={{ shrink: true }}
                 value={filterTanggal}
                 onChange={(e) => setFilterTanggal(e.target.value)}
-                InputProps={{
-                  style: { borderRadius: 8 },
-                  // endAdornment dihapus agar ikon kalender bawaan browser muncul
-                }}
+                InputProps={{ style: { borderRadius: 8 } }}
               />
               <TextField
                 fullWidth
@@ -297,7 +285,7 @@ const MasyarakatLacakLaporan: React.FC = () => {
                 size="medium"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                SelectProps={{ native: true }} // Ini sudah benar untuk tampilan bawaan
+                SelectProps={{ native: true }}
                 InputProps={{ style: { borderRadius: 8 } }}
               >
                 <option value="">Semua Status</option>
@@ -306,13 +294,12 @@ const MasyarakatLacakLaporan: React.FC = () => {
                 <option value="Selesai">Selesai</option>
                 <option value="Ditolak">Ditolak</option>
               </TextField>
-              {/* *** STYLING CHANGE: Tombol Reset *** */}
               <Button
                 variant="contained"
                 size="large"
                 fullWidth
                 sx={{
-                  borderRadius: 2, // 8px
+                  borderRadius: 2,
                   py: 1.5,
                   fontWeight: 600,
                   textTransform: 'none',
@@ -341,7 +328,6 @@ const MasyarakatLacakLaporan: React.FC = () => {
                 const images = laporan.dokumentasi || [];
                 const statusConfig = getStatusConfig(laporan.status);
 
-                // *** STYLING CHANGE: Rombak total Kartu Laporan ***
                 return (
                   <Paper
                     key={laporan.id}
@@ -356,7 +342,6 @@ const MasyarakatLacakLaporan: React.FC = () => {
                     }}
                   >
                     <Grid container spacing={2} alignItems="center">
-                      {/* Baris 1: Jenis Kejadian */}
                       <Grid item xs={12} sm={6}>
                         <Chip
                           label={laporan.jenisKejadian}
@@ -396,33 +381,35 @@ const MasyarakatLacakLaporan: React.FC = () => {
                             <>
                               {images.slice(0, 2).map((doc, idx) => (
                                 <Grid item xs={12} sm={6} key={idx}>
-                                    {doc.tipeFile === 'Gambar' ? (
-                                      <CardMedia
-                                        component="img"
-                                        height={140}
-                                        image={`http://localhost:5000/uploads/${doc.fileUrl}`}
-                                        alt={`Bukti ${idx + 1}`}
-                                        sx={{
-                                          borderRadius: 2,
-                                          objectFit: 'cover',
-                                          cursor: 'pointer',
-                                          transition: 'transform 0.3s',
-                                          '&:hover': { transform: 'scale(1.05)' },
-                                        }}
-                                        onClick={() =>
-                                          setSelectedImage(`http://localhost:5000/uploads/${doc.fileUrl}`)
-                                        }
-                                      />
-                                    ) : doc.tipeFile === 'Video' ? (
-                                      <CardMedia
-                                        component="video"
-                                        height={140}
-                                        src={`http://localhost:5000/uploads/${doc.fileUrl}`}
+                                  {doc.tipeFile === 'Gambar' ? (
+                                    <CardMedia
+                                      component="img"
+                                      height={140}
+                                      // Gunakan fungsi helper di sini
+                                      image={getCleanImageUrl(doc.fileUrl)}
                                       alt={`Bukti ${idx + 1}`}
-                                        controls // Penting untuk video
-                                        sx={{ borderRadius: 2, objectFit: 'cover' }}
+                                      sx={{
+                                        borderRadius: 2,
+                                        objectFit: 'cover',
+                                        cursor: 'pointer',
+                                        transition: 'transform 0.3s',
+                                        '&:hover': { transform: 'scale(1.05)' },
+                                      }}
+                                      onClick={() => {
+                                        // Opsi: bisa buka dialog preview di sini
+                                        window.open(getCleanImageUrl(doc.fileUrl), '_blank');
+                                      }}
                                     />
-                                    ) : null}
+                                  ) : doc.tipeFile === 'Video' ? (
+                                    <CardMedia
+                                      component="video"
+                                      height={140}
+                                      // Gunakan fungsi helper di sini
+                                      src={getCleanImageUrl(doc.fileUrl)}
+                                      controls
+                                      sx={{ borderRadius: 2, objectFit: 'cover' }}
+                                    />
+                                  ) : null}
                                 </Grid>
                               ))}
                               {images.length === 1 && (
@@ -444,10 +431,8 @@ const MasyarakatLacakLaporan: React.FC = () => {
                         </Grid>
                       </Grid>
 
-                      {/* Baris 3: Lokasi, Status, Tombol */}
                       <Grid item xs={12} sx={{ mt: 2 }}>
                         <Grid container alignItems="center" spacing={2}>
-                          {/* Kiri: Lokasi + Status */}
                           <Grid item xs={12} md={6}>
                             <Stack spacing={1} alignItems="flex-start">
                               <Typography
@@ -471,7 +456,6 @@ const MasyarakatLacakLaporan: React.FC = () => {
                             </Stack>
                           </Grid>
 
-                          {/* Kanan: Tombol-tombol */}
                           <Grid item xs={12} md={6}>
                             <Stack
                               direction="row"
@@ -495,13 +479,9 @@ const MasyarakatLacakLaporan: React.FC = () => {
                                 onClick={() => {
                                   if (laporan.latitude && laporan.longitude) {
                                     window.open(
-                                      `https://www.google.com/maps/search/?api=1&query=${laporan.latitude},${laporan.longitude}`,
+                                      `http://maps.google.com/maps?q=${laporan.latitude},${laporan.longitude}`,
                                       '_blank',
                                     );
-                                    // window.open(
-                                    //   `https://www.google.com/maps?q=${laporan.latitude},${laporan.longitude}`, // <-- PERBAIKAN
-                                    //   '_blank',
-                                    // );
                                   }
                                 }}
                               >
@@ -536,7 +516,6 @@ const MasyarakatLacakLaporan: React.FC = () => {
                 );
               })
             ) : (
-              // *** STYLING CHANGE: Tampilan "Belum Ada Laporan" ***
               <Paper
                 variant="outlined"
                 sx={{

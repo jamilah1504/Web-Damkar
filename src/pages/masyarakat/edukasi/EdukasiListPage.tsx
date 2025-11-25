@@ -48,7 +48,7 @@ const stripHtml = (html: string) => {
     return html.replace(/<[^>]*>?/gm, '');
   }
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.body.textContent || "";
+  return doc.body.textContent || '';
 };
 
 const EdukasiListPage: React.FC = () => {
@@ -74,7 +74,6 @@ const EdukasiListPage: React.FC = () => {
     fetchEdukasi();
   }, []);
 
-
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
@@ -88,9 +87,20 @@ const EdukasiListPage: React.FC = () => {
     <Container sx={{ py: 4, minHeight: '100vh', maxWidth: 'lg' }}>
       <Button
         component={Link}
-        to="/"
+        to="/masyarakat/dashboard"
         startIcon={<ArrowBackIcon />}
-        sx={{ mb: 2 }}
+        size="large" // Membuat ukuran tombol lebih besar
+        variant="contained" // Membuat tombol memiliki background warna (bukan transparan)
+        sx={{
+          mb: 2,
+          backgroundColor: '#d32f2f', // Warna Merah
+          color: '#fff', // Warna Teks Putih
+          fontWeight: 'bold',
+          padding: '10px 24px', // Menambah ruang di dalam tombol agar terlihat lebih gagah
+          '&:hover': {
+            backgroundColor: '#b71c1c', // Warna merah lebih gelap saat kursor diarahkan (hover)
+          },
+        }}
       >
         Kembali ke Home
       </Button>
@@ -111,9 +121,9 @@ const EdukasiListPage: React.FC = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   borderRadius: 3, // Sedikit lebih bulat
-                    // Shadow modern yang lebih lembut
+                  // Shadow modern yang lebih lembut
                   boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                    // Transisi untuk hover effect
+                  // Transisi untuk hover effect
                   transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
                   '&:hover': {
                     transform: 'translateY(-4px)',
@@ -127,57 +137,59 @@ const EdukasiListPage: React.FC = () => {
                   sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
                 >
                   <CardMedia
-        _           component="img"
+                    _
+                    component="img"
                     height="160"
                     image={isImageUrl(item.fileUrl) ? item.fileUrl! : PLACEHOLDER_IMAGE}
                     alt={item.judul}
                     sx={{ objectFit: 'cover' }} // Memastikan gambar tidak gepeng
                   />
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography 
-                        gutterBottom 
-                        variant="h6" 
-                        component="h2" 
-                        sx={{
-                          fontWeight: 600,
-                          // Batasi judul 2 baris
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          minHeight: '3.2rem', // (1.6rem line-height * 2)
-                        }}
-                      >
+                    <Typography
+                      gutterBottom
+                      variant="h6"
+                      component="h2"
+                      sx={{
+                        fontWeight: 600,
+                        // Batasi judul 2 baris
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        minHeight: '3.2rem', // (1.6rem line-height * 2)
+                      }}
+                    >
                       {item.judul}
                     </Typography>
                     <Chip
                       label={item.kategori}
-            _         size="small"
-                        // Style chip yang lebih modern
+                      _
+                      size="small"
+                      // Style chip yang lebih modern
                       variant="filled"
-                        color="warning" // Asumsi tema damkar (bisa 'primary' jika biru)
-                      sx={{ 
-                            mb: 1.5,
-                            bgcolor: 'warning.light', // Latar oranye muda
-                            color: 'warning.dark', // Teks oranye tua
-                            fontWeight: 500,
-                            alignSelf: 'flex-start'
-                          }}
+                      color="warning" // Asumsi tema damkar (bisa 'primary' jika biru)
+                      sx={{
+                        mb: 1.5,
+                        bgcolor: 'warning.light', // Latar oranye muda
+                        color: 'warning.dark', // Teks oranye tua
+                        fontWeight: 500,
+                        alignSelf: 'flex-start',
+                      }}
                     />
-                    <Typography 
-                        variant="body2" 
-                        color="text.secondary"
-                        sx={{
-                          // Batasi deskripsi 3 baris
-                          display: '-webkit-box',
-                          WebkitLineClamp: 3,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {/* Gunakan fungsi stripHtml di sini */}
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        // Batasi deskripsi 3 baris
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {/* Gunakan fungsi stripHtml di sini */}
                       {stripHtml(item.isiKonten)}
                     </Typography>
                   </CardContent>
@@ -188,17 +200,19 @@ const EdukasiListPage: React.FC = () => {
         ) : (
           <Grid item xs={12}>
             {/* Tampilan kosong dengan ikon */}
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              mt: 5, 
-              color: 'text.secondary',
-              p: 3,
-              bgcolor: 'white',
-              borderRadius: 2
-            }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mt: 5,
+                color: 'text.secondary',
+                p: 3,
+                bgcolor: 'white',
+                borderRadius: 2,
+              }}
+            >
               <InfoOutlinedIcon sx={{ fontSize: 48, mb: 2 }} />
               <Typography align="center" variant="h6">
                 Belum ada konten edukasi

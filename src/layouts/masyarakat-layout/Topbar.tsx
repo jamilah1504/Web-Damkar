@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { AppBar, Toolbar, Button, Box, Typography, IconButton, Badge } from '@mui/material'; // 1. Tambah Badge
+import { AppBar, Toolbar, Button, Box, Typography, IconButton, Badge } from '@mui/material';
 import { Home, Clock, Bell, LogIn, LogOut } from 'lucide-react';
 import MenuIcon from '@mui/icons-material/Menu';
 
 import paths, { rootPaths } from '../../routes/paths';
+
 interface User {
   name: string;
   role: string;
@@ -12,18 +13,18 @@ interface User {
 
 interface TopbarProps {
   onDrawerToggle: () => void;
-  notifCount: number; // Tambahkan ini
+  notifCount: number;
 }
 
-const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle, notifCount }) => { // Terima props
+const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle, notifCount }) => {
   const [user, setUser] = useState<User | null>(null);
 
   const homePath = user
-    ? (user.role.toLowerCase() === 'admin'
+    ? user.role.toLowerCase() === 'admin'
       ? `/${rootPaths.adminRoot}/${paths.adminDashboard}`
-      : (user.role.toLowerCase() === 'masyarakat'
-        ? `/${rootPaths.masyarakatRoot}/${paths.masyarakatDashboard}`
-        : `/${rootPaths.petugasRoot}/${paths.petugasTugasAktif}`))
+      : user.role.toLowerCase() === 'masyarakat'
+      ? `/${rootPaths.masyarakatRoot}/${paths.masyarakatDashboard}`
+      : `/${rootPaths.petugasRoot}/${paths.petugasTugasAktif}`
     : paths.landing;
 
   useEffect(() => {
@@ -33,7 +34,6 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle, notifCount }) => { // T
     }
   }, []);
 
-
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
@@ -42,6 +42,9 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle, notifCount }) => { // T
     window.location.href = '/auth/login';
   };
 
+  // Font standar sistem
+  const commonFont = 'system-ui, -apple-system, sans-serif';
+
   return (
     <AppBar
       position="sticky"
@@ -49,6 +52,7 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle, notifCount }) => { // T
         backgroundColor: '#d32f2f',
         color: 'white',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        fontFamily: commonFont,
       }}
     >
       <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, md: 10 } }}>
@@ -56,12 +60,27 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle, notifCount }) => { // T
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <img src={'/logo2.png'} alt="Logo Damkar" style={{ height: '70px', width: '80px' }} />
           <Box>
-            <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
+                fontWeight: 'bold', // TEBAL
+                lineHeight: 1.2,
+                fontFamily: commonFont,
+                fontSize: '1.3rem', // Sedikit diperbesar agar lebih tegas
+              }}
+            >
               Pemadam Kebakaran
             </Typography>
             <Typography
               variant="body2"
-              sx={{ lineHeight: 1.2, display: { xs: 'none', sm: 'block' } }}
+              sx={{
+                lineHeight: 1.2,
+                display: { xs: 'none', sm: 'block' },
+                fontFamily: commonFont,
+                fontWeight: 'bold', // TEBAL
+                opacity: 0.9,
+              }}
             >
               Kabupaten Subang
             </Typography>
@@ -72,43 +91,61 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle, notifCount }) => { // T
         <Box>
           {/* --- Desktop Nav --- */}
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 2 }}>
-            
             {user && (
               <>
                 <Button
                   component={RouterLink}
                   to={homePath}
                   startIcon={<Home />}
-                  sx={{ color: 'white', textTransform: 'none' }}
+                  sx={{
+                    color: 'white',
+                    textTransform: 'none',
+                    fontFamily: commonFont,
+                    fontWeight: 'bold', // TEBAL
+                    fontSize: '1rem',
+                  }}
                 >
                   Home
                 </Button>
-                
+
                 <Button
                   component={RouterLink}
                   to={`/${rootPaths.masyarakatRoot}/${paths.masyarakatLacakLaporan}`}
                   startIcon={<Clock />}
-                  sx={{ color: 'white', textTransform: 'none' }}
+                  sx={{
+                    color: 'white',
+                    textTransform: 'none',
+                    fontFamily: commonFont,
+                    fontWeight: 'bold', // TEBAL
+                    fontSize: '1rem',
+                  }}
                 >
                   History
                 </Button>
 
-                {/* --- 5. Tombol Notifikasi dengan Badge --- */}
+                {/* --- Tombol Notifikasi dengan Badge --- */}
                 <Button
                   component={RouterLink}
                   to={`/${rootPaths.masyarakatRoot}/${paths.masyarakatNotifikasi}`}
                   startIcon={
-                    <Badge 
-                        badgeContent={notifCount} 
-                        color="warning" // Pakai warna 'warning' (kuning/oranye) agar kontras dengan background merah
-                        max={99}
+                    <Badge
+                      badgeContent={notifCount}
+                      color="warning"
+                      max={99}
+                      sx={{ '& .MuiBadge-badge': { fontWeight: 'bold' } }} // Badge text tebal
                     >
-                        <Bell />
+                      <Bell />
                     </Badge>
                   }
-                  sx={{ color: 'white', textTransform: 'none' }}
+                  sx={{
+                    color: 'white',
+                    textTransform: 'none',
+                    fontFamily: commonFont,
+                    fontWeight: 'bold', // TEBAL
+                    fontSize: '1rem',
+                  }}
                 >
-                  Notification
+                  Pemberitahuan
                 </Button>
               </>
             )}
@@ -123,6 +160,9 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle, notifCount }) => { // T
                   bgcolor: 'white',
                   color: '#d32f2f',
                   borderRadius: 4,
+                  textTransform: 'none',
+                  fontFamily: commonFont,
+                  fontWeight: 'bold', // TEBAL
                   '&:hover': { bgcolor: '#f0f0f0' },
                 }}
               >
@@ -138,6 +178,9 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle, notifCount }) => { // T
                   bgcolor: 'white',
                   color: '#d32f2f',
                   borderRadius: 4,
+                  textTransform: 'none',
+                  fontFamily: commonFont,
+                  fontWeight: 'bold', // TEBAL
                   '&:hover': { bgcolor: '#f0f0f0' },
                 }}
               >
@@ -153,16 +196,15 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle, notifCount }) => { // T
               color="inherit"
               edge="end"
               onClick={onDrawerToggle}
-              sx={{ display: { md: 'none'},
-                  bgcolor: '#d32f2f',
-                  '&:hover': { bgcolor: '#d32f2f' },
-
-                }}
+              sx={{
+                display: { md: 'none' },
+                bgcolor: '#d32f2f',
+                '&:hover': { bgcolor: '#d32f2f' },
+              }}
             >
-              {/* Optional: Kasih badge juga di menu hamburger mobile jika diinginkan */}
-               <Badge badgeContent={notifCount} color="warning" variant="dot">
-                  <MenuIcon />
-               </Badge>
+              <Badge badgeContent={notifCount} color="warning" variant="dot">
+                <MenuIcon />
+              </Badge>
             </IconButton>
           ) : (
             <Button
@@ -175,16 +217,18 @@ const Topbar: React.FC<TopbarProps> = ({ onDrawerToggle, notifCount }) => { // T
                 bgcolor: 'white',
                 color: '#d32f2f',
                 borderRadius: 4,
+                textTransform: 'none',
+                fontFamily: commonFont,
+                fontWeight: 'bold', // TEBAL
                 '&:hover': { bgcolor: '#f0f0f0' },
                 py: 1.5,
                 px: 2.0,
-                fontSize: '0.8rem',
+                fontSize: '0.9rem',
               }}
             >
               Login
             </Button>
           )}
-
         </Box>
       </Toolbar>
     </AppBar>

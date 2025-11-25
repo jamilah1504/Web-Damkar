@@ -15,6 +15,7 @@ import {
   TextField,
   Button,
 } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {
   LocationOn as LocationOnIcon,
   CheckCircle as CheckIcon,
@@ -24,6 +25,7 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 
 // --- FUNGSI HELPER URL GAMBAR (PERBAIKAN UTAMA) ---
@@ -218,23 +220,25 @@ const MasyarakatLacakLaporan: React.FC = () => {
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#F8F9FA', minHeight: '100vh' }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={4}>
-        <Typography variant="h4" fontWeight={600} color="#333">
-          Riwayat Laporan
-        </Typography>
-        <Chip
-          label={`${filteredList.length} Laporan`}
-          sx={{
-            fontWeight: 600,
-            fontSize: '0.9rem',
-            px: 2,
-            py: 2,
-            borderRadius: 2,
-            bgcolor: '#dc2626',
-            color: 'white',
-          }}
-        />
-      </Stack>
+      <Button
+        component={Link}
+        to="/masyarakat/dashboard"
+        startIcon={<ArrowBackIcon />}
+        size="large" // Membuat ukuran tombol lebih besar
+        variant="contained" // Membuat tombol memiliki background warna (bukan transparan)
+        sx={{
+          mb: 2,
+          backgroundColor: '#d32f2f', // Warna Merah
+          color: '#fff', // Warna Teks Putih
+          fontWeight: 'bold',
+          padding: '10px 24px', // Menambah ruang di dalam tombol agar terlihat lebih gagah
+          '&:hover': {
+            backgroundColor: '#b71c1c', // Warna merah lebih gelap saat kursor diarahkan (hover)
+          },
+        }}
+      >
+        Kembali ke Home
+      </Button>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3, borderRadius: 2, fontWeight: 500 }}>

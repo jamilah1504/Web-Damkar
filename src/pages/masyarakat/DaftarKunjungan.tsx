@@ -80,14 +80,49 @@ type NotificationStatus = 'success' | 'error' | 'pending' | null;
 
 const MediaPreview: React.FC<MediaPreviewProps> = ({ file, onRemove }) => {
   return (
-    <div className="media-preview">
-        <div className="file-preview">
-          <FileText size={24} />
-          <span className="file-name-truncate">{file.name}</span>
-        </div>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: '#f8fafc',
+      padding: '6px 12px',
+      borderRadius: '6px',
+      border: '1px solid #e2e8f0',
+      fontSize: '0.875rem'
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        overflow: 'hidden',
+        flex: 1
+      }}>
+        <FileText size={16} color="#4b5563" />
+        <span style={{
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          maxWidth: '200px'
+        }}>
+          {file.name}
+        </span>
+      </div>
       <button
         onClick={onRemove}
-        className="media-remove-button"
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '4px',
+          borderRadius: '4px',
+          color: '#ef4444',
+          ':hover': {
+            backgroundColor: '#fee2e2'
+          }
+        }}
         aria-label="Hapus file"
         type="button"
       >
@@ -354,7 +389,7 @@ const DaftarKunjungan: React.FC = () => {
         }}>
         <h3 style={{
           margin: '0 0 12px 0',
-          color: '#1e40af',
+          color: '#ef4444',
           fontSize: '1rem',
           display: 'flex',
           alignItems: 'center',
@@ -458,12 +493,12 @@ const DaftarKunjungan: React.FC = () => {
                cursor = 'default';
             } else if (isFull) {
                // --- APPROVED: Warna Hijau ---
-               bgColor = '#f0fdf4'; 
-               textColor = '#15803d'; 
+               bgColor = '#ffededff'; 
+               textColor = '#ef4444'; 
                cursor = 'not-allowed';
-               border = '1px solid #bbf7d0';
+               border = '1px solid #f8c6c6ff';
             } else if (isSelected) {
-               bgColor = '#3b82f6';
+               bgColor = '#fcd3b2ff';
                textColor = 'white';
             } else if (isToday(day)) {
                bgColor = '#eff6ff';
@@ -508,7 +543,7 @@ const DaftarKunjungan: React.FC = () => {
                     <div 
                         key={idx} 
                         style={{
-                            backgroundColor: '#22c55e', // Warna hijau success
+                            backgroundColor: '#ef4444', // Warna hijau success
                             color: 'white',
                             fontSize: '0.55rem',
                             padding: '2px 4px',
@@ -546,14 +581,14 @@ const DaftarKunjungan: React.FC = () => {
               width: '16px',
               height: '16px',
               borderRadius: '4px',
-              backgroundColor: '#f0fdf4',
-              border: '1px solid #bbf7d0',
+              backgroundColor: '#ffededff',
+              border: '1px solid #f8c6c6ff',
               position: 'relative',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-                <div style={{width:'80%', height:'40%', backgroundColor:'#22c55e', borderRadius:'2px'}}></div>
+                <div style={{width:'80%', height:'40%', backgroundColor:'#ef4444', borderRadius:'2px'}}></div>
             </div>
             <span style={{ color: '#4b5563' }}>Jadwal Terisi (Sekolah Lain)</span>
           </div>
@@ -562,7 +597,7 @@ const DaftarKunjungan: React.FC = () => {
               width: '16px',
               height: '16px',
               borderRadius: '4px',
-              backgroundColor: '#3b82f6',
+              backgroundColor: '#fcd3b2ff',
             }} />
             <span style={{ color: '#4b5563' }}>Tanggal Pilihan Anda</span>
           </div>
@@ -620,8 +655,8 @@ const DaftarKunjungan: React.FC = () => {
                     style={{
                       cursor: 'pointer',
                       backgroundColor: formData.tanggal ? '#f0f9ff' : 'white',
-                      borderColor: formData.tanggal ? '#3b82f6' : '#e5e7eb',
-                      color: formData.tanggal ? '#0369a1' : '#6b7280',
+                      borderColor: formData.tanggal ? '#ef4444' : '#e5e7eb',
+                      color: formData.tanggal ? '#ef4444' : '#6b7280',
                     }}
                     onClick={() => {
                       document.querySelector('.calendar-section')?.scrollIntoView({
@@ -638,7 +673,7 @@ const DaftarKunjungan: React.FC = () => {
                       right: '12px', 
                       top: '50%', 
                       transform: 'translateY(-50%)', 
-                      color: formData.tanggal ? '#3b82f6' : '#9ca3af' 
+                      color: formData.tanggal ? '#ef4444' : '#9ca3af' 
                     }} 
                   />
                 </div>
@@ -684,7 +719,7 @@ const DaftarKunjungan: React.FC = () => {
               marginTop: '8px'
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.borderColor = '#3b82f6';
+              e.currentTarget.style.borderColor = '#ef4444';
               e.currentTarget.style.backgroundColor = '#eff6ff';
             }}
             onMouseOut={(e) => {
@@ -715,7 +750,7 @@ const DaftarKunjungan: React.FC = () => {
                 openFilePicker({ accept: '.pdf,.doc,.docx' });
               }}
               style={{
-                backgroundColor: '#3b82f6',
+                backgroundColor: '#ef4444',
                 color: 'white',
                 border: 'none',
                 padding: '8px 20px',
@@ -738,14 +773,16 @@ const DaftarKunjungan: React.FC = () => {
           </div>
 
           {mediaFiles.length > 0 && (
-            <div className="file-previews" style={{ marginTop: '8px' }}>
-              <h4 style={{
-                margin: '0 0 8px 0',
-                color: '#374151',
-                fontSize: '0.875rem',
-                fontWeight: '600'
-              }}>File Terunggah:</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ marginTop: '8px' }}>
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '6px',
+                maxHeight: '200px',
+                overflowY: 'auto',
+                padding: '4px 2px',
+                marginRight: '-4px'
+              }}>
                 {mediaFiles.map((file, index) => (
                   <MediaPreview
                     key={index}
@@ -761,7 +798,7 @@ const DaftarKunjungan: React.FC = () => {
             type="submit"
             disabled={isSubmitting}
             style={{
-              backgroundColor: isSubmitting ? '#9ca3af' : '#2563eb',
+              backgroundColor: isSubmitting ? '#9ca3af' : '#ef4444',
               color: 'white',
               border: 'none',
               padding: '14px 24px',

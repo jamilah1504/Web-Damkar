@@ -41,8 +41,22 @@ import {
   UploadFile as UploadFileIcon,
   Save as SaveIcon,
 } from '@mui/icons-material';
+import Swal from 'sweetalert2'; // <--- IMPORT SWAL DI SINI
 
-// --- (1) TIPE DATA ---
+// --- SETUP TOAST (Notifikasi Kecil di Pojok Kanan) ---
+const Toast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  didOpen: (toast) => {
+    toast.addEventListener('mouseenter', Swal.stopTimer);
+    toast.addEventListener('mouseleave', Swal.resumeTimer);
+  }
+});
+
+// --- (1) TIPE DATA (SAMA SEPERTI SEBELUMNYA) ---
 interface IUserSimple {
   id: number;
   name: string;
@@ -96,22 +110,17 @@ const modalStyle = {
   overflowY: 'auto',
 };
 
-// --- Helper untuk Warna Status ---
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'Penanganan':
-      return 'warning'; // Kuning/Oranye
-    case 'Selesai':
-      return 'success'; // Hijau
-    case 'Ditolak':
-      return 'error';   // Merah (BARU)
+    case 'Penanganan': return 'warning';
+    case 'Selesai': return 'success';
+    case 'Ditolak': return 'error';
     case 'Investigasi':
-    default:
-      return 'default'; // Abu-abu
+    default: return 'default';
   }
 };
 
-// --- Props untuk Row ---
+// --- Props Row ---
 interface RowProps {
   row: IInsidenData;
   index: number;
@@ -139,24 +148,34 @@ function Row(props: RowProps) {
   } = props;
   const [open, setOpen] = useState(false);
 
+  // --- (MODIFIKASI 1) Hapus Laporan Pakai SWAL ---
   const handleHapusLaporan = async (laporanId: number) => {
-    if (!window.confirm("Anda yakin ingin menghapus laporan ini? Ini akan menghapus file terkait.")) {
-      return;
-    }
+    const result = await Swal.fire({
+      title: 'Hapus Laporan?',
+      text: "Data dan file terkait akan dihapus permanen!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal'
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/reports/${laporanId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!response.ok) {
-        throw new Error('Gagal menghapus laporan');
-      }
-      alert('Laporan berhasil dihapus');
+      if (!response.ok) throw new Error('Gagal menghapus laporan');
+      
+      Swal.fire('Terhapus!', 'Laporan berhasil dihapus.', 'success');
       fetchData(); 
     } catch (err: any) {
       console.error(err);
-      alert('Error: ' + err.message);
+      Swal.fire('Gagal', err.message, 'error');
     }
   };
 
@@ -166,7 +185,6 @@ function Row(props: RowProps) {
 
   return (
     <React.Fragment>
-      {/* Baris utama */}
       <TableRow sx={{ '& > *': { borderBottom: 'unset' } }}>
         <TableCell>{index +1}</TableCell>
         <TableCell component="th" scope="row">{row.judulInsiden}</TableCell>
@@ -179,12 +197,7 @@ function Row(props: RowProps) {
         <TableCell>{row.jenisKejadian}</TableCell>
         <TableCell>{row.skalaInsiden}</TableCell>
         <TableCell>
-          <Chip 
-            label={row.statusInsiden} 
-            // UPDATE: Menggunakan helper function warna baru
-            color={getStatusColor(row.statusInsiden)} 
-            size="small" 
-          />
+          <Chip label={row.statusInsiden} color={getStatusColor(row.statusInsiden)} size="small" />
         </TableCell>
         <TableCell align="center">
           <IconButton size="small" onClick={() => setOpen(!open)}>
@@ -193,13 +206,11 @@ function Row(props: RowProps) {
         </TableCell>
       </TableRow>
 
-      {/* Baris tersembunyi (collapsible content) */}
       <TableRow>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box sx={{ margin: 2, padding: 2, backgroundColor: '#fafafa', borderRadius: 2 }}>
               
-              {/* --- Laporan Terkait --- */}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">Laporan Terkait</Typography>
                 <Button 
@@ -217,7 +228,6 @@ function Row(props: RowProps) {
                   row.Laporans.map((laporan) => (
                     <Grid item xs={12} sm={6} md={4} key={laporan.id}>
                       <Card sx={{ display: 'flex', height: '100%' }}>
-                        
                         { (laporan.Dokumentasis && laporan.Dokumentasis.length > 0) ? (
                           laporan.Dokumentasis[0].tipeFile === 'Gambar' ? (
                             <CardMedia
@@ -274,7 +284,6 @@ function Row(props: RowProps) {
                 )}
               </Grid>
 
-              {/* --- Petugas Terkait --- */}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 4, mb: 2 }}>
                 <Typography variant="h6">Petugas Terkait</Typography>
                 <Button 
@@ -293,10 +302,20 @@ function Row(props: RowProps) {
                     <Chip
                       key={petugas.id}
                       label={`${petugas.name} - ${petugas.pangkat || 'Petugas'}`}
+                      // --- (MODIFIKASI 2) Hapus Petugas Pakai SWAL ---
                       onDelete={() => { 
-                        if(window.confirm(`Hapus petugas ${petugas.name} dari tugas ini?`)) {
-                           onHapusPetugasClick(row.id, petugas.id);
-                        }
+                        Swal.fire({
+                          title: 'Lepas Tugas?',
+                          text: `Hapus ${petugas.name} dari insiden ini?`,
+                          icon: 'question',
+                          showCancelButton: true,
+                          confirmButtonText: 'Ya, Hapus',
+                          cancelButtonText: 'Batal'
+                        }).then((result) => {
+                          if (result.isConfirmed) {
+                             onHapusPetugasClick(row.id, petugas.id);
+                          }
+                        });
                      }}
                       deleteIcon={<DeleteIcon />}
                       variant="outlined"
@@ -309,13 +328,11 @@ function Row(props: RowProps) {
                 )}
               </Box>
 
-              {/* --- Status Insiden --- */}
               <Box sx={{ mt: 4 }}>
                 <Typography variant="h6" gutterBottom>Status Insiden</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Chip 
                     label={row.statusInsiden} 
-                    // UPDATE: Warna status ditolak = merah
                     color={getStatusColor(row.statusInsiden)}
                     size="small" 
                     />
@@ -345,12 +362,11 @@ const AdminLaporanMasuk: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Modal Status
+  // States (Sama seperti sebelumnya)
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [currentInsiden, setCurrentInsiden] = useState<IInsidenData | null>(null);
   const [newStatus, setNewStatus] = useState<string>('');
 
-  // Modal Detail & Edit
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedLaporan, setSelectedLaporan] = useState<ILaporan | null>(null);
   const [isEditingLaporan, setIsEditingLaporan] = useState(false); 
@@ -361,7 +377,6 @@ const AdminLaporanMasuk: React.FC = () => {
     deskripsi: '',
   });
 
-  // Modal Tambah Laporan
   const [tambahLaporanModalOpen, setTambahLaporanModalOpen] = useState(false);
   const [selectedInsidenId, setSelectedInsidenId] = useState<number | null>(null);
   const [laporanForm, setLaporanForm] = useState({
@@ -372,7 +387,6 @@ const AdminLaporanMasuk: React.FC = () => {
   const [laporanFiles, setLaporanFiles] = useState<File[]>([]);
   const [editingLaporanId, setEditingLaporanId] = useState<number | null>(null);
 
-  // Modal Tambah Petugas
   const [tambahPetugasModalOpen, setTambahPetugasModalOpen] = useState(false);
   const [petugasList, setPetugasList] = useState<IUserSimple[]>([]);
   const [selectedPetugasList, setSelectedPetugasList] = useState<IUserSimple[]>([]);
@@ -380,14 +394,12 @@ const AdminLaporanMasuk: React.FC = () => {
   // Fetch Data
   const fetchData = async () => {
     try {
-      setLoading(true); 
+      //setLoading(true); 
       setError(null);
       const response = await fetch('http://localhost:5000/api/insiden/manajemen-laporan', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data: IInsidenData[] = await response.json();
       setDataInsiden(data);
     } catch (err: any) {
@@ -415,7 +427,6 @@ const AdminLaporanMasuk: React.FC = () => {
     fetchPetugasList();
   }, []); 
 
-
   // Handlers Modal Tambah Petugas
   const handleOpenTambahPetugasModal = (insidenId: number) => {
     setSelectedInsidenId(insidenId);
@@ -431,7 +442,7 @@ const AdminLaporanMasuk: React.FC = () => {
 
   const handleSubmitTambahPetugas = async () => {
     if (selectedPetugasList.length === 0 || !selectedInsidenId) {
-        alert("Pilih minimal satu petugas");
+        Swal.fire('Peringatan', 'Pilih minimal satu petugas', 'warning');
         return;
     }
     setIsSubmitting(true);
@@ -456,11 +467,16 @@ const AdminLaporanMasuk: React.FC = () => {
           throw new Error(err.message || 'Gagal menugaskan petugas');
       }
       
-      alert('Petugas berhasil ditugaskan!');
+      // --- (MODIFIKASI 3) Toast Success ---
+      Toast.fire({
+        icon: 'success',
+        title: 'Petugas berhasil ditugaskan'
+      });
+      
       handleCloseTambahPetugasModal();
       fetchData(); 
     } catch (err: any) {
-      alert(err.message);
+      Swal.fire('Error', err.message, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -481,14 +497,19 @@ const AdminLaporanMasuk: React.FC = () => {
         const err = await response.json();
         throw new Error(err.message || 'Gagal menghapus petugas');
       }
-      alert('Petugas berhasil dihapus dari tugas.');
+      
+      // --- (MODIFIKASI 4) Toast Success ---
+      Toast.fire({
+        icon: 'success',
+        title: 'Petugas dihapus dari tugas'
+      });
+      
       fetchData(); 
     } catch (err: any) {
       console.error(err);
-      alert(err.message);
+      Swal.fire('Gagal', err.message, 'error');
     }
   };
-
 
   // Handlers Modal Status
   const handleOpenStatusModal = (insiden: IInsidenData) => {
@@ -517,11 +538,18 @@ const AdminLaporanMasuk: React.FC = () => {
         const errData = await response.json();
         throw new Error(errData.message || 'Gagal memperbarui status');
       }
+
+      // --- (MODIFIKASI 5) Toast Success ---
+      Toast.fire({
+        icon: 'success',
+        title: `Status diubah jadi ${newStatus}`
+      });
+
       handleCloseStatusModal();
       await fetchData(); 
     } catch (err: any) {
       console.error(err);
-      alert('Error: ' + err.message); 
+      Swal.fire('Error', err.message, 'error');
       setIsSubmitting(false);
     }
   };
@@ -580,24 +608,39 @@ const AdminLaporanMasuk: React.FC = () => {
       }
 
       const updatedLaporan: ILaporan = await response.json(); 
-      alert('Laporan berhasil diperbarui');
+      
+      // --- (MODIFIKASI 6) Toast Success ---
+      Toast.fire({
+        icon: 'success',
+        title: 'Laporan berhasil diperbarui'
+      });
       
       setSelectedLaporan(updatedLaporan); 
       setIsEditingLaporan(false); 
       setLaporanFiles([]); 
-      
       fetchData(); 
 
     } catch (err: any) {
       console.error(err);
-      alert('Error: ' + err.message);
+      Swal.fire('Error', err.message, 'error');
     } finally {
       setIsUpdatingLaporan(false);
     }
   };
 
   const handleHapusDokumentasi = async (dokumentasiId: number) => {
-    if (!window.confirm("Anda yakin ingin menghapus dokumen ini?")) return;
+    // --- (MODIFIKASI 7) Confirm Delete Dokumen ---
+    const result = await Swal.fire({
+      title: 'Hapus Dokumen?',
+      text: "File ini akan dihapus permanen.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, hapus',
+      cancelButtonText: 'Batal'
+    });
+    
+    if (!result.isConfirmed) return;
+
     setIsUpdatingLaporan(true); 
     try {
       const token = localStorage.getItem('token');
@@ -606,7 +649,9 @@ const AdminLaporanMasuk: React.FC = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Gagal menghapus dokumentasi');
-      alert('Dokumentasi berhasil dihapus');
+      
+      Toast.fire({ icon: 'success', title: 'Dokumentasi dihapus' });
+
       if (selectedLaporan) {
         const updatedDokumentasis = selectedLaporan.Dokumentasis?.filter(
           (doc) => doc.id !== dokumentasiId
@@ -616,7 +661,7 @@ const AdminLaporanMasuk: React.FC = () => {
       fetchData(); 
     } catch (err: any) {
       console.error(err);
-      alert('Error: ' + err.message);
+      Swal.fire('Error', err.message, 'error');
     } finally {
       setIsUpdatingLaporan(false); 
     }
@@ -653,7 +698,7 @@ const AdminLaporanMasuk: React.FC = () => {
 
   const handleSubmitTambahLaporan = async () => {
     if (!selectedInsidenId || !laporanForm.namaPelapor || !laporanForm.alamatKejadian || !laporanForm.deskripsi) {
-      alert("Semua field (Nama Pelapor, Alamat, Deskripsi) tidak boleh kosong.");
+      Swal.fire('Lengkapi Data', "Nama Pelapor, Alamat, dan Deskripsi wajib diisi.", 'warning');
       return;
     }
     setIsSubmitting(true);
@@ -683,17 +728,24 @@ const AdminLaporanMasuk: React.FC = () => {
         throw new Error(errData.message || 'Gagal menambah laporan');
       }
       
+      // --- (MODIFIKASI 8) Toast Success ---
+      Toast.fire({
+        icon: 'success',
+        title: 'Laporan berhasil ditambahkan'
+      });
+      
       handleCloseTambahLaporanModal();
       await fetchData(); 
 
     } catch (err: any) {
       console.error(err);
-      alert('Error: ' + err.message);
+      Swal.fire('Gagal', err.message, 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // --- RENDER (Tidak banyak berubah visual, hanya logic di atas) ---
   if (loading) {
     return (
       <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
@@ -714,6 +766,9 @@ const AdminLaporanMasuk: React.FC = () => {
     );
   }
 
+  // ... (SISA KODE JSX DI BAWAH SAMA PERSIS SEPERTI SEBELUMNYA KARENA KITA HANYA UBAH LOGIC HANDLERNYA) ...
+  // ... Paste sisa JSX Return kamu di sini (Table, Modal, dll) ...
+  
   return (
     <Box sx={{ p: 3, flexGrow: 1, bgcolor: '#f5f5f5' }}>
       <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -751,7 +806,7 @@ const AdminLaporanMasuk: React.FC = () => {
         </Table>
       </TableContainer>
 
-      {/* --- Modal Edit Status (SUDAH DITAMBAH OPSI DITOLAK) --- */}
+      {/* --- Modal Edit Status --- */}
       <Modal open={statusModalOpen} onClose={handleCloseStatusModal} closeAfterTransition BackdropComponent={Backdrop} BackdropProps={{ timeout: 500 }} >
         <Fade in={statusModalOpen}>
           <Box sx={modalStyle}>
@@ -777,7 +832,6 @@ const AdminLaporanMasuk: React.FC = () => {
                 <MenuItem value="Investigasi">Investigasi</MenuItem>
                 <MenuItem value="Penanganan">Penanganan</MenuItem>
                 <MenuItem value="Selesai">Selesai</MenuItem>
-                {/* --- (BARU) Status Ditolak --- */}
                 <MenuItem value="Ditolak" sx={{ color: 'error.main' }}>Ditolak</MenuItem>
               </Select>
             </FormControl>
@@ -807,7 +861,6 @@ const AdminLaporanMasuk: React.FC = () => {
                 {isEditingLaporan ? 'Edit Laporan' : 'Detail Laporan'}
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                
                 {!isEditingLaporan ? (
                   <Button
                     variant="outlined"
@@ -839,7 +892,6 @@ const AdminLaporanMasuk: React.FC = () => {
             {selectedLaporan && (
               <Box>
                 {!isEditingLaporan ? (
-                  // --- MODE VIEW ---
                   <>
                     <Typography variant="body1" gutterBottom>
                       <strong>Pelapor:</strong> {selectedLaporan.namaPelapor || (selectedLaporan.Pelapor?.name || 'Pelapor Anonim')}
@@ -858,7 +910,6 @@ const AdminLaporanMasuk: React.FC = () => {
                     </Paper> 
                   </>
                 ) : (
-                  // --- MODE EDIT (IN-PLACE) ---
                   <Box component="form" noValidate onSubmit={(e) => { e.preventDefault(); handleSubmitEditLaporan(); }}>
                     <TextField
                       label="Nama Pelapor"
@@ -896,7 +947,6 @@ const AdminLaporanMasuk: React.FC = () => {
                       sx={{ mb: 2 }}
                     />
 
-                    {/* --- TOMBOL UPLOAD SAAT EDIT --- */}
                     <Button
                         variant="outlined"
                         component="label" 
@@ -920,7 +970,6 @@ const AdminLaporanMasuk: React.FC = () => {
                   </Box>
                 )}
 
-                {/* --- DOKUMENTASI --- */}
                 <Typography variant="body1" gutterBottom sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <strong>Dokumentasi:</strong>
                   {isEditingLaporan && (
@@ -974,7 +1023,6 @@ const AdminLaporanMasuk: React.FC = () => {
               </Box>
             )}
 
-            {/* Tombol Aksi Simpan Perubahan (IN-PLACE EDIT) */}
             {isEditingLaporan && selectedLaporan && (
               <Button
                 type="submit"
@@ -1085,7 +1133,7 @@ const AdminLaporanMasuk: React.FC = () => {
         </Fade>
       </Modal>
 
-      {/* --- Modal Tambah Petugas (MULTIPLE & SEARCH) --- */}
+      {/* --- Modal Tambah Petugas --- */}
       <Modal
         open={tambahPetugasModalOpen}
         onClose={handleCloseTambahPetugasModal}
@@ -1104,7 +1152,6 @@ const AdminLaporanMasuk: React.FC = () => {
               </IconButton>
             </Stack>
             
-            {/* --- GANTI SELECT DENGAN AUTOCOMPLETE --- */}
             <FormControl fullWidth sx={{ mt: 2 }}>
               <Autocomplete
                 multiple

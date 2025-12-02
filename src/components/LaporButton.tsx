@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { Video, Loader2, Camera, Image as ImageIcon, X, Send, AlertTriangle } from 'lucide-react';
 // Import komponen notifikasi yang sudah dipisah
 import NotificationPopup from './NotificationPopup';
+import api from '../api';
 
 // ==========================================
 // 1. SERVICES & TYPES
@@ -34,13 +35,13 @@ const submitLaporan = async (data: LaporData) => {
   }
 
   // Ganti URL dengan endpoint backend Anda
-  const response = await fetch('http://localhost:5000/api/reports', {
-    method: 'POST',
-    body: formData,
+  const response = await api.post('/reports', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
   });
 
-  if (!response.ok) throw new Error('Gagal mengirim laporan ke server.');
-  return await response.json();
+  return response.data;
 };
 
 // ==========================================
@@ -211,17 +212,13 @@ const LaporButton = () => {
       formDataAI.append('file', file);
 
       // Gunakan Endpoint Terkonsolidasi (1 Call)
-      const resAI = await fetch('http://localhost:5000/api/ai/analyze-report', {
-        method: 'POST',
-        body: formDataAI,
+      const resAI = await api.post('/ai/analyze-report', formDataAI, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      if (!resAI.ok) {
-         const errData = await resAI.json().catch(() => ({}));
-         throw new Error(errData.message || 'Gagal menganalisa video.');
-      }
-      
-      const dataAI = await resAI.json();
+      const dataAI = resAI.data;
       const extracted = dataAI.formData;
 
       const isDataComplete = extracted.namaPelapor && extracted.jenisKejadian && extracted.detailKejadian && extracted.alamatKejadian;
@@ -248,7 +245,9 @@ const LaporButton = () => {
     } catch (err: any) {
       console.error('Lapor Error:', err);
       setIsLoading(false);
-      setNotification({ status: 'error', message: err.message || 'Terjadi kesalahan sistem.' });
+      const errorMessage = err.response?.data?.message || err.message || 'Terjadi kesalahan sistem.';
+      setNotification({ status: 'error', message: errorMessage });
+      
       if (cameraInputRef.current) cameraInputRef.current.value = '';
       if (galleryInputRef.current) galleryInputRef.current.value = '';
     }
@@ -335,6 +334,7 @@ const LaporButton = () => {
       .manual-header {
         background-color: #fffbeb;
         padding: 20px;
+
         border-bottom: 1px solid #fcd34d;
         display: flex;
         align-items: flex-start;
@@ -343,11 +343,16 @@ const LaporButton = () => {
       }
       
       .manual-header h3 {
-        margin: 0;
+        margin: 20px 0 0 0;
+
         font-weight: 700;
         color: #92400e; /* Warna teks yang kontras dengan background kuning */
         font-size: 18px;
         line-height: 1.2;
+      }
+
+      .manual-header svg {
+        margin-top: 20px;
       }
       
       .manual-header p {

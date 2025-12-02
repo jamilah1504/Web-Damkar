@@ -9,6 +9,8 @@ const api = axios.create({
     // Ganti 5000 dengan port backend Anda jika berbeda
     baseURL: 'http://localhost:5000/api' 
 });
+const BASE_URL= 'http://localhost:5000' 
+
 
 // Interceptor untuk menambahkan token authentication ke setiap request
 api.interceptors.request.use(
@@ -31,4 +33,4 @@ api.interceptors.request.use(
     }
 );
 
-export default api;
+export default api; {BASE_URL};

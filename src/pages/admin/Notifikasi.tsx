@@ -3,7 +3,7 @@ import {
     Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Button, Stack, CircularProgress,
     Dialog, DialogActions, DialogContent, DialogTitle, TextField, Chip, Grid, Divider
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
+
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CampaignIcon from '@mui/icons-material/Campaign'; 
@@ -163,11 +163,6 @@ const AdminNotifikasi: React.FC = () => {
         setEditingNotif(notif);
         setFormData(notif ? { judul: notif.judul, isiPesan: notif.isiPesan } : { judul: '', isiPesan: '' });
         setIsModalOpen(true);
-    };
-
-    const handleOpenBroadcastModal = () => {
-        setFormData({ judul: '', isiPesan: '' });
-        setIsBroadcastModalOpen(true);
     };
 
     const handleCloseModal = () => {
@@ -447,8 +442,7 @@ const AdminNotifikasi: React.FC = () => {
                     <Typography variant="body2" color="text.secondary">Log pengumuman umum (Non-Insiden)</Typography>
                 </Box>
                 <Stack direction="row" spacing={2}>
-                    <Button variant="outlined" startIcon={<AddIcon />} onClick={() => handleOpenModal()}>Catat</Button>
-                    <Button variant="contained" color="warning" startIcon={<CampaignIcon />} onClick={handleOpenBroadcastModal}>Broadcast Umum</Button>
+                    <Button variant="contained" color="warning" startIcon={<CampaignIcon />} onClick={() => handleOpenModal()}>Broadcast Umum</Button>
                 </Stack>
             </Stack>
 
@@ -542,19 +536,7 @@ const AdminNotifikasi: React.FC = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseModal}>Batal</Button>
-                    <Button variant="contained" onClick={handleSubmitCrud}>Simpan</Button>
-                </DialogActions>
-            </Dialog>
-
-            <Dialog open={isBroadcastModalOpen} onClose={handleCloseModal} fullWidth maxWidth="sm">
-                <DialogTitle>Broadcast Umum</DialogTitle>
-                <DialogContent dividers>
-                    <TextField label="Judul Broadcast" name="judul" fullWidth margin="dense" value={formData.judul} onChange={handleFormChange} />
-                    <TextField label="Isi Broadcast" name="isiPesan" fullWidth multiline rows={3} margin="dense" value={formData.isiPesan} onChange={handleFormChange} />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseModal}>Batal</Button>
-                    <Button variant="contained" color="error" endIcon={<SendIcon />} onClick={handleSendBroadcast}>Kirim</Button>
+                    <Button variant="contained" color="error" endIcon={<SendIcon />} onClick={handleSubmitCrud}>Kirim</Button>
                 </DialogActions>
             </Dialog>
         </Box>

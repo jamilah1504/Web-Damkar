@@ -1,5 +1,4 @@
 import { ReactElement, useState, useEffect } from 'react';
-import axios from 'axios';
 import {
   Box,
   Button,
@@ -27,13 +26,7 @@ import {
   CardContent,
 } from '@mui/material';
 import IconifyIcon from 'components/base/IconifyIcon';
-
-// =============================
-// API CLIENT
-// =============================
-const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api/laporan-periodik',
-});
+import api from '../../../api';
 
 // =============================
 // INTERFACES
@@ -108,7 +101,7 @@ const AdminLaporanPeriodik = (): ReactElement => {
   const fetchHistory = async () => {
     setLoadingHistory(true);
     try {
-      const { data } = await apiClient.get('/');
+      const { data } = await api.get('/laporan-periodik');
       setHistory(data.data || []);
     } catch (err) {
       console.error('Gagal memuat riwayat:', err);
@@ -130,7 +123,7 @@ const AdminLaporanPeriodik = (): ReactElement => {
     setPreview(null);
 
     try {
-      const response = await apiClient.get('/preview', { params: getParams() });
+      const response = await api.get('laporan-periodik/preview', { params: getParams() });
       setPreview(response.data.data);
     } catch (err: any) {
       console.error('Error preview:', err.response?.data || err.message);
@@ -148,7 +141,7 @@ const AdminLaporanPeriodik = (): ReactElement => {
     setError(null);
 
     try {
-      const response = await apiClient.get('/export', {
+      const response = await api.get('laporan-periodik/export', {
         params: getParams(format),
         responseType: 'blob',
         timeout: 300000, // 5 menit (PDF bisa lama)
@@ -209,7 +202,7 @@ const AdminLaporanPeriodik = (): ReactElement => {
   const deleteReport = async (id: number) => {
     if (!confirm('Yakin menghapus laporan ini? File akan ikut terhapus.')) return;
     try {
-      await apiClient.delete(`/${id}`);
+      await api.delete(`laporan-periodik/${id}`);
       fetchHistory();
     } catch (err) {
       alert('Gagal menghapus laporan.');

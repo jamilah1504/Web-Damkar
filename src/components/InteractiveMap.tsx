@@ -1,88 +1,132 @@
-// src/components/InteractiveMap.tsx (VERSI BARU DENGAN MAP PANNING)
-import React, { useEffect } from 'react'; // <-- Tambahkan useEffect
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet'; // <-- Tambahkan useMap
+// src/components/InteractiveMap.tsx
+import React, { useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
-// ... (Kode ikon Leaflet Anda)
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
-});
-L.Marker.prototype.options.icon = DefaultIcon;
+// --- DEFINISI TIPE MARKER (UNION TYPE) ---
 
-
-export interface IMapMarker {
+// Tipe 1: Lokasi Rawan
+export interface IMarkerRawan {
+  type: 'rawan';
   id: number;
-  latitude: number;
-  longitude: number;
   namaLokasi: string;
+  deskripsi: string;
+  latitude: number | string; // Handle string dari API
+  longitude: number | string;
+  images: string[];
 }
+
+// Tipe 2: Laporan
+export interface IMarkerLaporan {
+  type: 'laporan';
+  id: number;
+  judul_laporan: string;
+  deskripsi_laporan: string;
+  latitude: number | string;
+  longitude: number | string;
+  status: string;
+  foto_bukti?: string;
+  nama_pelapor?: string;
+  created_at?: string;
+}
+
+// Gabungan (Export ini agar bisa dipakai di Peta.tsx)
+export type IMapMarker = IMarkerRawan | IMarkerLaporan;
 
 interface InteractiveMapProps {
   markers: IMapMarker[];
+  centerCoordinates?: [number, number];
   onMarkerClick: (marker: IMapMarker) => void;
-  onMapClick?: (latlng: L.LatLng) => void; 
-  centerCoordinates?: L.LatLngExpression; // <-- (1) TAMBAHKAN PROP BARU INI
+  onMapClick?: (latlng: L.LatLng) => void;
 }
 
-// ... (Komponen MapClickHandler Anda yang lama)
-const MapClickHandler = ({ onClick }: { onClick: (latlng: L.LatLng) => void }) => {
-  useMapEvents({ click(e) { onClick(e.latlng); } });
+// --- DEFINISI ICON ---
+// Hapus shadowUrl agar tidak error 404 default leaflet
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Icon Merah (Untuk Rawan)
+const iconRawan = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Icon Biru/Kuning (Untuk Laporan)
+const iconLaporan = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-gold.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// --- KOMPONEN HELPER UNTUK KLIK MAP ---
+const MapEvents: React.FC<{ onMapClick?: (latlng: L.LatLng) => void }> = ({ onMapClick }) => {
+  useMapEvents({
+    click(e) {
+      if (onMapClick) onMapClick(e.latlng);
+    },
+  });
   return null;
 };
 
-
-// --- (2) TAMBAHKAN KOMPONEN HELPER INI ---
-// Komponen ini akan "mendengarkan" perubahan prop centerCoordinates
-// dan memerintahkan peta untuk pindah.
-const MapCenterUpdater: React.FC<{ center: L.LatLngExpression }> = ({ center }) => {
-  const map = useMap(); // Dapatkan instansi peta
+// --- KOMPONEN UTAMA ---
+const InteractiveMap: React.FC<InteractiveMapProps> = ({ 
+  markers, 
+  centerCoordinates, 
+  onMarkerClick, 
+  onMapClick 
+}) => {
   
-  useEffect(() => {
-    if (center) {
-      map.flyTo(center, 15); // Pindahkan peta ke center baru (zoom 15)
-    }
-  }, [center, map]); // Jalankan efek ini setiap kali 'center' berubah
-
-  return null; // Komponen ini tidak me-render apapun
-};
-
-
-const InteractiveMap: React.FC<InteractiveMapProps> = ({ markers, onMarkerClick, onMapClick, centerCoordinates }) => {
-  // Gunakan centerCoordinates sebagai posisi awal jika ada
-  const defaultPosition: L.LatLngExpression = centerCoordinates || [-6.4988, 107.6710];
+  // Helper untuk mendapatkan Judul Popup
+  const getTitle = (marker: IMapMarker) => {
+    return marker.type === 'rawan' ? marker.namaLokasi : marker.judul_laporan;
+  };
 
   return (
-    <MapContainer 
-      center={defaultPosition} 
-      zoom={15} 
+    <MapContainer
+      center={centerCoordinates || [-6.5, 107.5]} // Default coords (Subang/Jabar area)
+      zoom={10}
       style={{ height: '100%', width: '100%' }}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution='&copy; OpenStreetMap contributors'
       />
-      
-      {/* ... (Kode .map() untuk Marker Anda) ... */}
-      {markers.map((marker) => (
-        <Marker
-          key={marker.id}
-          position={[marker.latitude, marker.longitude]}
-          eventHandlers={{ click: () => { onMarkerClick(marker); } }}
-        >
-          <Popup>{marker.namaLokasi}</Popup>
-        </Marker>
-      ))}
 
-      {onMapClick && <MapClickHandler onClick={onMapClick} />}
+      <MapEvents onMapClick={onMapClick} />
 
-      {/* --- (3) TAMBAHKAN HELPER-NYA DI SINI --- */}
-      {/* Kirim centerCoordinates ke helper */}
-      {centerCoordinates && <MapCenterUpdater center={centerCoordinates} />}
+      {markers.map((marker) => {
+        // Pastikan koordinat valid number
+        const lat = typeof marker.latitude === 'string' ? parseFloat(marker.latitude) : marker.latitude;
+        const lng = typeof marker.longitude === 'string' ? parseFloat(marker.longitude) : marker.longitude;
+
+        return (
+          <Marker
+            key={`${marker.type}-${marker.id}`}
+            position={[lat, lng]}
+            icon={marker.type === 'rawan' ? iconRawan : iconLaporan}
+            eventHandlers={{
+              click: () => onMarkerClick(marker),
+            }}
+          >
+            <Popup>
+              <strong>{getTitle(marker)}</strong><br />
+              {marker.type === 'rawan' ? 'Area Rawan' : `Laporan: ${marker.status}`}
+            </Popup>
+          </Marker>
+        );
+      })}
     </MapContainer>
   );
 };

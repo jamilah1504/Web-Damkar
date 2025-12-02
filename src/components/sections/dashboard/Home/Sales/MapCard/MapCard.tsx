@@ -24,6 +24,7 @@ import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import CloseIcon from '@mui/icons-material/Close';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import api from '../../../../../../api';
 
 interface ExtendedMapMarker extends IMapMarker {
   description?: string;
@@ -71,12 +72,8 @@ const MapCard = (): ReactElement => {
 
       try {
         setLoading(true);
-        const res = await fetch('http://localhost:5000/api/lokasi-rawan', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        if (!res.ok) throw new Error('Gagal memuat data');
-        const data = await res.json();
+        const res = await api.get('/lokasi-rawan');
+        const data = await res.data;
         
         const mapped: ExtendedMapMarker[] = (data || []).map((d: any) => ({
           id: d.id,

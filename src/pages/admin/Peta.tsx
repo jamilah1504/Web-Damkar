@@ -1,44 +1,25 @@
-// src/pages/admin/Peta.tsx (Refactor: Sidebar dipisah ke komponen lokal)
-import React, { useState, useEffect, useRef } from 'react';
+// src/pages/admin/Peta.tsx
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
-  Box,
-  Typography,
-  Paper,
-  Button,
-  Stack,
-  Card,
-  CardMedia,
-  CardActionArea,
-  CircularProgress,
-  Modal,
-  TextField,
-  Fade,
-  IconButton,
+  Box, Typography, Paper, Button, Stack, Card, CardMedia, CardActionArea,
+  CircularProgress, Modal, TextField, Fade, IconButton, Chip, Divider, Alert
 } from '@mui/material';
 import { 
-  Close as CloseIcon, 
-  UploadFile as UploadFileIcon, 
-  Delete as DeleteIcon,
-  Edit as EditIcon,
-  ArrowBackIosNew as ArrowBackIcon,
-  ArrowForwardIos as ArrowForwardIcon
+  Close as CloseIcon, UploadFile as UploadFileIcon, Delete as DeleteIcon,
+  Edit as EditIcon, ArrowBackIosNew as ArrowBackIcon, ArrowForwardIos as ArrowForwardIcon,
+  ReportProblem as ReportIcon, Place as PlaceIcon
 } from '@mui/icons-material';
-import InteractiveMap, { IMapMarker } from '../../components/InteractiveMap';
+import InteractiveMap, { 
+  IMapMarker, 
+  IMarkerRawan, 
+  IMarkerLaporan 
+} from '../../components/InteractiveMap';
 import L from 'leaflet';
 
-// --- (1) Tipe Data ---
-interface ILokasiFromAPI {
-  id: number;
-  namaLokasi: string;
-  deskripsi: string;
-  latitude: number;
-  longitude: number;
-  images: string[]; 
-}
-type ILokasiRawan = ILokasiFromAPI;
+// --- KONFIGURASI SERVER ---
+// Ganti port ini sesuai dengan port backend Anda (default 5000)
+const API_BASE_URL = 'http://localhost:5000';
 
-
-// --- (2) Style untuk Modal ---
 const modalStyle = {
   position: 'absolute' as 'absolute',
   top: '50%',
@@ -52,31 +33,48 @@ const modalStyle = {
 };
 
 // ====================================================================
-// --- (A) KOMPONEN SIDEBAR (DIPISAHKAN TAPI TETAP 1 FILE) ---
+// --- (A) KOMPONEN SIDEBAR ---
 // ====================================================================
 
-// Definisikan semua props yang akan diterima dari AdminPeta
-interface LokasiSidebarProps {
+interface UnifiedSidebarProps {
   loading: boolean;
   error: string | null;
-  selectedLokasi: ILokasiRawan | null;
-  lokasiList: ILokasiRawan[];
-  onSelectItem: (lokasi: ILokasiRawan) => void;
+  selectedItem: IMapMarker | null;
+  itemList: IMapMarker[];
+  onSelectItem: (item: IMapMarker) => void;
   onEditClick: () => void;
   onDeleteClick: () => void;
 }
 
-const LokasiSidebar: React.FC<LokasiSidebarProps> = ({
-  loading,
-  error,
-  selectedLokasi,
-  lokasiList,
-  onSelectItem,
-  onEditClick,
-  onDeleteClick,
+const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
+  loading, error, selectedItem, itemList, onSelectItem, onEditClick, onDeleteClick,
 }) => {
-  
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Helper: Mendapatkan Judul Item
+  const getTitle = (item: IMapMarker) => {
+    return item.type === 'rawan' ? item.namaLokasi : item.judul_laporan;
+  };
+
+  // Helper: Mendapatkan URL Gambar yang Valid
+  const getFullImageUrl = (url: string | undefined) => {
+    if (!url) return 'https://via.placeholder.com/150?text=No+Image';
+    // Jika URL sudah lengkap (misal dari Cloudinary), pakai langsung.
+    // Jika URL relatif (misal /uploads/...), tambahkan API_BASE_URL.
+    return url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+  };
+
+  // Helper: Mendapatkan Gambar Utama untuk Thumbnail List
+  const getMainImage = (item: IMapMarker) => {
+    if (item.type === 'rawan') {
+      return item.images && item.images.length > 0 
+        ? getFullImageUrl(item.images[0]) 
+        : 'https://via.placeholder.com/150?text=No+Image';
+    } else {
+      // Untuk laporan, ambil foto bukti
+      return getFullImageUrl(item.foto_bukti);
+    }
+  };
 
   const handleScroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
@@ -86,107 +84,114 @@ const LokasiSidebar: React.FC<LokasiSidebarProps> = ({
   };
 
   return (
-    <Paper 
-      sx={{ width: 400, height: '100%', bgcolor: '#ffffff', borderRadius: 2, boxShadow: 3, p: 2.5, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxSizing: 'border-box' }}
-    >
+    <Paper sx={{ width: 400, height: '100%', bgcolor: '#ffffff', borderRadius: 2, boxShadow: 3, p: 2.5, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxSizing: 'border-box' }}>
       {loading ? (
         <CircularProgress sx={{ alignSelf: 'center', mt: 4 }} />
-      ) : selectedLokasi ? (
+      ) : selectedItem ? (
         <>
-          {/* Detail Lokasi */}
-          <Box mb={3} sx={{ flexShrink: 0 }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1.5 }}>Detail Lokasi</Typography>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: 'primary.main' }}>{selectedLokasi.namaLokasi}</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.9rem' }}>{selectedLokasi.deskripsi}</Typography>
-            
-            {/* Kontainer Koordinat + Tombol Scroll */}
-            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.5}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                📍 {selectedLokasi.latitude.toFixed(5)}, {selectedLokasi.longitude.toFixed(5)}
-              </Typography>
-              <Stack direction="row" spacing={0.5}>
-                <IconButton size="small" onClick={() => handleScroll('left')} sx={{ border: '1px solid #ddd', borderRadius: '4px', color: 'error.main' }}>
-                  <ArrowBackIcon sx={{ fontSize: '1rem' }} />
-                </IconButton>
-                <IconButton size="small" onClick={() => handleScroll('right')} sx={{ border: '1px solid #ddd', borderRadius: '4px', color: 'error.main' }}>
-                  <ArrowForwardIcon sx={{ fontSize: '1rem' }} />
-                </IconButton>
-              </Stack>
+          {/* HEADER DETAIL */}
+          <Box mb={2} sx={{ flexShrink: 0 }}>
+            <Stack direction="row" spacing={1} alignItems="center" mb={1.5}>
+               {selectedItem.type === 'rawan' ? (
+                 <Chip icon={<PlaceIcon />} label="Lokasi Rawan" color="error" size="small" variant="outlined" />
+               ) : (
+                 <Chip icon={<ReportIcon />} label={`Status: ${selectedItem.status}`} color="warning" size="small" />
+               )}
             </Stack>
 
-            {/* Kontainer Gambar Scrollable */}
-            <Box sx={{ overflow: 'hidden', position: 'relative' }}>
-              <Box
-                ref={scrollContainerRef} 
-                sx={{
-                  display: 'flex', overflowX: 'auto', scrollBehavior: 'smooth',
-                  gap: 1, py: 0.5,
-                  '&::-webkit-scrollbar': { display: 'none' },
-                  '-ms-overflow-style': 'none', 'scrollbar-width': 'none',
-                }}
-              >
-                {selectedLokasi.images.map((img, index) => (
-                  <Box key={index} sx={{ minWidth: 120, flexShrink: 0 }}> 
-                    <Card sx={{ borderRadius: 1.5, boxShadow: 'none', border: 'none' }}>
-                      <CardMedia component="img" height="80" image={img} alt={`Foto ${selectedLokasi.namaLokasi} ${index + 1}`} />
-                    </Card>
-                  </Box>
-                ))}
+            <Typography variant="h6" sx={{ fontWeight: 'bold', lineHeight: 1.2, mb: 1 }}>
+              {getTitle(selectedItem)}
+            </Typography>
+
+            {selectedItem.type === 'laporan' && (
+              <Typography variant="caption" sx={{ display: 'block', mb: 1, color: 'text.secondary' }}>
+                 Pelapor: <strong>{selectedItem.nama_pelapor || 'Anonim'}</strong> • {selectedItem.created_at?.substring(0, 10)}
+              </Typography>
+            )}
+
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.9rem', maxHeight: 100, overflowY: 'auto' }}>
+              {selectedItem.type === 'rawan' ? selectedItem.deskripsi : selectedItem.deskripsi_laporan}
+            </Typography>
+            
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.5}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                📍 {Number(selectedItem.latitude).toFixed(5)}, {Number(selectedItem.longitude).toFixed(5)}
+              </Typography>
+              
+              {selectedItem.type === 'rawan' && selectedItem.images.length > 1 && (
+                <Stack direction="row" spacing={0.5}>
+                  <IconButton size="small" onClick={() => handleScroll('left')} sx={{ border: '1px solid #ddd' }}><ArrowBackIcon sx={{ fontSize: '1rem' }} /></IconButton>
+                  <IconButton size="small" onClick={() => handleScroll('right')} sx={{ border: '1px solid #ddd' }}><ArrowForwardIcon sx={{ fontSize: '1rem' }} /></IconButton>
+                </Stack>
+              )}
+            </Stack>
+
+            {/* AREA GAMBAR DETAIL */}
+            <Box sx={{ overflow: 'hidden', position: 'relative', mb: 2 }}>
+              <Box ref={scrollContainerRef} sx={{ display: 'flex', overflowX: 'auto', scrollBehavior: 'smooth', gap: 1, py: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}>
+                {selectedItem.type === 'rawan' ? (
+                   // Render Gambar Lokasi Rawan (Bisa Banyak)
+                   selectedItem.images.map((img, index) => (
+                    <Box key={index} sx={{ minWidth: 120, flexShrink: 0 }}> 
+                      <Card sx={{ borderRadius: 1.5, boxShadow: 'none' }}>
+                        <CardMedia component="img" height="80" image={getFullImageUrl(img)} alt={`Foto ${index + 1}`} sx={{ objectFit: 'cover' }} />
+                      </Card>
+                    </Box>
+                  ))
+                ) : (
+                   // Render Gambar Laporan (Single)
+                   selectedItem.foto_bukti ? (
+                     <Card sx={{ width: '100%', flexShrink: 0, boxShadow: 'none' }}>
+                        <CardMedia 
+                          component="img" 
+                          height="180" 
+                          image={getFullImageUrl(selectedItem.foto_bukti)} 
+                          sx={{ borderRadius: 1.5, objectFit: 'cover' }} 
+                        />
+                     </Card>
+                   ) : (
+                     <Box sx={{ width: '100%', p: 2, bgcolor: '#f5f5f5', borderRadius: 1, textAlign: 'center' }}>
+                        <Typography variant="caption" sx={{ fontStyle: 'italic', color: 'gray' }}>Tidak ada foto bukti.</Typography>
+                     </Box>
+                   )
+                )}
               </Box>
             </Box>
             
-            {/* Grup Tombol Aksi (Edit & Hapus) */}
-            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-              <Button
-                size="small"
-                variant="outlined"
-                color="primary"
-                startIcon={<EditIcon />}
-                fullWidth
-                onClick={onEditClick} // <-- Gunakan prop
-              >
-                Edit
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                color="error"
-                startIcon={<DeleteIcon />}
-                fullWidth
-                onClick={onDeleteClick} // <-- Gunakan prop
-              >
-                Hapus
-              </Button>
-            </Stack>
+            {/* ACTION BUTTONS (Khusus Rawan) */}
+            {selectedItem.type === 'rawan' && (
+              <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                <Button size="small" variant="outlined" color="primary" startIcon={<EditIcon />} fullWidth onClick={onEditClick}>Edit</Button>
+                <Button size="small" variant="outlined" color="error" startIcon={<DeleteIcon />} fullWidth onClick={onDeleteClick}>Hapus</Button>
+              </Stack>
+            )}
           </Box>
-
-          {/* Lokasi Lainnya */}
-          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1.5, flexShrink: 0 }}>
-            Lokasi lainnya
-          </Typography>
-          <Box sx={{ flex: 1, overflowY: 'auto', minHeight: 0, boxSizing: 'border-box' }}>
-            <Stack spacing={2}>
-              {lokasiList
-                .filter(l => l.id !== selectedLokasi.id)
-                .map((lokasi) => (
-                  <Card key={lokasi.id} sx={{ borderRadius: 2, flexShrink: 0, height: '100px', boxShadow: 'none', border: 'none' }}>
-                    <CardActionArea 
-                      onClick={() => onSelectItem(lokasi)} // <-- Gunakan prop
-                      sx={{ display: 'flex', justifyContent: 'flex-start', p: 1.5, height: '100%' }}
-                    >
-                      <CardMedia
-                        component="img"
-                        sx={{ width: 80, height: 70, borderRadius: 1.5, flexShrink: 0 }}
-                        image={lokasi.images[0] || 'https://via.placeholder.com/150'}
-                        alt={lokasi.namaLokasi}
+          
+          <Divider sx={{ mb: 2 }} />
+          
+          {/* LIST ITEM LAINNYA */}
+          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1.5, flexShrink: 0 }}>Daftar di Peta</Typography>
+          <Box sx={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+            <Stack spacing={1}>
+              {itemList
+                .filter(l => !(l.id === selectedItem.id && l.type === selectedItem.type)) // Hide selected
+                .map((item) => (
+                  <Card key={`${item.type}-${item.id}`} sx={{ borderRadius: 2, flexShrink: 0, height: '80px', boxShadow: 'none', border: '1px solid #eee' }}>
+                    <CardActionArea onClick={() => onSelectItem(item)} sx={{ display: 'flex', justifyContent: 'flex-start', p: 1, height: '100%' }}>
+                      <CardMedia 
+                        component="img" 
+                        sx={{ width: 60, height: 60, borderRadius: 1.5, flexShrink: 0, objectFit: 'cover' }} 
+                        image={getMainImage(item)} 
+                        alt="thumbnail" 
                       />
                       <Box sx={{ ml: 1.5, overflow: 'hidden', flex: 1 }}>
-                        <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {lokasi.namaLokasi}
+                        <Typography sx={{ fontWeight: 'bold', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {getTitle(item)}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                          {lokasi.deskripsi?.substring(0, 40) || 'Tanpa deskripsi'}...
-                        </Typography>
+                        <Stack direction="row" alignItems="center" spacing={0.5} mt={0.5}>
+                             {item.type === 'laporan' ? <ReportIcon color="warning" sx={{ fontSize: 14 }} /> : <PlaceIcon color="error" sx={{ fontSize: 14 }} />}
+                             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>{item.type === 'rawan' ? 'Rawan' : 'Laporan'}</Typography>
+                        </Stack>
                       </Box>
                     </CardActionArea>
                   </Card>
@@ -195,68 +200,88 @@ const LokasiSidebar: React.FC<LokasiSidebarProps> = ({
           </Box>
         </>
       ) : (
-        <Typography sx={{ textAlign: 'center', mt: 4 }}>
-          {error ? error : 'Belum ada lokasi rawan.'}
-        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.6 }}>
+           <Typography variant="body1">Pilih marker di peta untuk melihat detail.</Typography>
+           {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+        </Box>
       )}
     </Paper>
   );
 };
 
-
 // ====================================================================
-// --- (B) KOMPONEN HALAMAN UTAMA (ADMIN PETA) ---
+// --- (B) KOMPONEN HALAMAN UTAMA ---
 // ====================================================================
 
 const AdminPeta: React.FC = () => {
-  // --- State (Semua state tetap di sini) ---
-  const [lokasiList, setLokasiList] = useState<ILokasiRawan[]>([]);
-  const [selectedLokasi, setSelectedLokasi] = useState<ILokasiRawan | null>(null);
+  const [lokasiRawanList, setLokasiRawanList] = useState<IMarkerRawan[]>([]);
+  const [laporanList, setLaporanList] = useState<IMarkerLaporan[]>([]);
+  const [selectedItem, setSelectedItem] = useState<IMapMarker | null>(null);
+
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isMapPanningEnabled, setIsMapPanningEnabled] = useState<boolean>(true);
   
+  // Modal State (Lokasi Rawan)
   const [openModal, setOpenModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false); 
-  const [formData, setFormData] = useState({ 
-    namaLokasi: '',
-    deskripsi: '',
-    latitude: null as number | null,
-    longitude: null as number | null,
-  });
-  
+  const [formData, setFormData] = useState({ namaLokasi: '', deskripsi: '', latitude: null as number | null, longitude: null as number | null });
   const [imageFiles, setImageFiles] = useState<File[]>([]); 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [isMapPanningEnabled, setIsMapPanningEnabled] = useState<boolean>(true);
 
-
-  // --- (Semua Fungsi & Handlers tetap di sini) ---
+  // --- FETCH DATA UTAMA ---
   const fetchData = async () => {
-    // ... (Fungsi fetchData Anda, tidak berubah)
     const token = localStorage.getItem('token');
-    if (!token) {
-      setError('Autentikasi tidak ditemukan. Silakan login kembali.');
-      setLoading(false); return;
-    }
+    if (!token) { setError('Autentikasi tidak ditemukan. Silakan login kembali.'); setLoading(false); return; }
+    
     try {
       setLoading(true); setError(null);
-      const response = await fetch('http://localhost:5000/api/lokasi-rawan', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.status === 401) {
-         setError('Sesi Anda berakhir. Silakan login kembali.'); return;
-      }
-      if (!response.ok) {
-        throw new Error(`Gagal memuat data: ${response.statusText}`);
-      }
-      const data: ILokasiRawan[] = await response.json(); 
-      setLokasiList(data);
-      if (selectedLokasi) {
-        const updatedSelected = data.find(l => l.id === selectedLokasi.id);
-        if (updatedSelected) { setSelectedLokasi(updatedSelected); }
-        else { setSelectedLokasi(data.length > 0 ? data[0] : null); }
-      } else if (data.length > 0) {
-        setSelectedLokasi(data[0]);
-      }
+      
+      // Ambil data Lokasi Rawan & Laporan secara paralel
+      // Menggunakan API_BASE_URL agar port 5000 terpanggil
+      const [resRawan, resLaporan] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/lokasi-rawan`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/api/laporan`, { headers: { 'Authorization': `Bearer ${token}` } }) 
+      ]);
+
+      if (!resRawan.ok) throw new Error("Gagal memuat lokasi rawan");
+      
+      const rawRawan = await resRawan.json();
+      const rawLaporan = resLaporan.ok ? await resLaporan.json() : [];
+
+      // 1. Map Lokasi Rawan
+      const mappedRawan: IMarkerRawan[] = rawRawan.map((item: any) => ({
+        ...item,
+        type: 'rawan',
+        latitude: parseFloat(item.latitude),
+        longitude: parseFloat(item.longitude),
+        // Pastikan images array ada
+        images: Array.isArray(item.images) ? item.images : [] 
+      }));
+
+      // 2. Map Laporan (Sinkron dengan reportController.js yang baru)
+      const mappedLaporan: IMarkerLaporan[] = rawLaporan
+        .filter((item: any) => item.latitude && item.longitude) // Filter koordinat valid
+        .map((item: any) => ({
+          type: 'laporan',
+          id: item.id,
+          judul_laporan: item.jenisKejadian || 'Laporan Masuk', 
+          deskripsi_laporan: item.deskripsi, 
+          latitude: parseFloat(item.latitude),
+          longitude: parseFloat(item.longitude),
+          status: item.status,
+          created_at: item.timestampDibuat,
+          // Ambil nama dari relasi Pelapor
+          nama_pelapor: item.Pelapor?.name || 'Masyarakat', 
+          // Ambil foto dari relasi Dokumentasis (array ke-0)
+          foto_bukti: (item.Dokumentasis && item.Dokumentasis.length > 0) 
+              ? item.Dokumentasis[0].fileUrl 
+              : null,
+      }));
+
+      setLokasiRawanList(mappedRawan);
+      setLaporanList(mappedLaporan);
+
     } catch (err: any) {
       setError(err.message); console.error(err);
     } finally {
@@ -264,267 +289,138 @@ const AdminPeta: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []); 
+  useEffect(() => { fetchData(); }, []); 
 
-  // Disable page-level scrolling while this page is mounted.
-  // We only change the document/body overflow dynamically so other pages are unaffected.
-  useEffect(() => {
-    const prevHtmlOverflow = document.documentElement.style.overflow;
-    const prevBodyOverflow = document.body.style.overflow;
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.documentElement.style.overflow = prevHtmlOverflow;
-      document.body.style.overflow = prevBodyOverflow;
-    };
-  }, []);
+  // Gabungkan kedua list untuk ditampilkan di map
+  const mapMarkers: IMapMarker[] = useMemo(() => [...lokasiRawanList, ...laporanList], [lokasiRawanList, laporanList]);
 
+  // Handle Klik Marker
   const handleMarkerClick = (marker: IMapMarker) => {
-    // ... (Tidak berubah)
-    const lokasi = lokasiList.find(l => l.id === marker.id);
-    if (lokasi) {
-      setIsMapPanningEnabled(true); 
-      setSelectedLokasi(lokasi);
-    }
+    setIsMapPanningEnabled(true); 
+    setSelectedItem(marker);
   };
 
+  // Handle Klik Peta (Untuk tambah lokasi rawan baru)
   const handleMapClick = (latlng: L.LatLng) => {
-    // ... (Tidak berubah)
     setIsEditMode(false); 
-    setFormData({ 
-      namaLokasi: '', deskripsi: '',
-      latitude: latlng.lat, longitude: latlng.lng,
-    });
+    setSelectedItem(null);
+    setFormData({ namaLokasi: '', deskripsi: '', latitude: latlng.lat, longitude: latlng.lng });
     setImageFiles([]); 
     setOpenModal(true);
   };
 
-  const handleOpenEditModal = () => {
-    // ... (Tidak berubah)
-    if (!selectedLokasi) return;
-    setIsEditMode(true); 
-    setFormData({ 
-      namaLokasi: selectedLokasi.namaLokasi,
-      deskripsi: selectedLokasi.deskripsi,
-      latitude: selectedLokasi.latitude,
-      longitude: selectedLokasi.longitude,
-    });
-    setImageFiles([]); 
-    setOpenModal(true);
-  };
-
-  const handleSubmitBaru = async () => {
-    // ... (Fungsi ini sudah benar)
+  // --- LOGIKA MODAL (CREATE/UPDATE LOKASI RAWAN) ---
+  const handleSubmit = async () => {
     setIsSubmitting(true);
     const token = localStorage.getItem('token');
-    if (!token || !formData.latitude || !formData.longitude) {
-      alert('Token atau koordinat tidak ditemukan');
-      setIsSubmitting(false); return;
-    }
     const formBody = new FormData();
     formBody.append('namaLokasi', formData.namaLokasi);
     formBody.append('deskripsi', formData.deskripsi);
     formBody.append('latitude', String(formData.latitude));
     formBody.append('longitude', String(formData.longitude));
-    if (imageFiles.length > 0) {
-      for (const file of imageFiles) {
-        formBody.append('images', file); 
-      }
-    }
+    imageFiles.forEach(file => formBody.append('images', file));
+
     try {
-      const response = await fetch('http://localhost:5000/api/lokasi-rawan', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formBody, 
-      });
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.message || 'Gagal menambah lokasi');
-      }
-      await fetchData(); 
-      setOpenModal(false);
-      setImageFiles([]); 
-    } catch (err: any) {
-      console.error(err); alert(`Error: ${err.message}`);
+        let url = `${API_BASE_URL}/api/lokasi-rawan`;
+        let method = 'POST';
+
+        if (isEditMode && selectedItem && selectedItem.type === 'rawan') {
+            url = `${API_BASE_URL}/api/lokasi-rawan/${selectedItem.id}`;
+            method = 'PUT';
+        }
+
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formBody,
+        });
+
+        if (!response.ok) throw new Error("Gagal menyimpan data");
+        
+        await fetchData(); // Refresh data
+        setOpenModal(false);
+        setImageFiles([]);
+
+    } catch (e: any) {
+        alert(e.message);
     } finally {
-      setIsSubmitting(false);
-    }
-  };
-  
-  const handleUpdateLokasi = async () => {
-    // ... (Tidak berubah)
-    if (!selectedLokasi) return;
-    setIsSubmitting(true);
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert('Autentikasi gagal');
-      setIsSubmitting(false); return;
-    }
-    const formBody = new FormData();
-    formBody.append('namaLokasi', formData.namaLokasi);
-    formBody.append('deskripsi', formData.deskripsi);
-    formBody.append('latitude', String(formData.latitude));
-    formBody.append('longitude', String(formData.longitude));
-    if (imageFiles.length > 0) {
-      for (const file of imageFiles) {
-        formBody.append('images', file); 
-      }
-    }
-    try {
-      const response = await fetch(`http://localhost:5000/api/lokasi-rawan/${selectedLokasi.id}`, {
-        method: 'PUT', 
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formBody, 
-      });
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.message || 'Gagal memperbarui lokasi');
-      }
-      await fetchData(); 
-      setOpenModal(false);
-    } catch (err: any) {
-      console.error(err); alert(`Error: ${err.message}`);
-    } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
   };
 
   const handleDeleteLokasi = async () => {
-    // ... (Tidak berubah)
-    if (!selectedLokasi) return;
-    const { id, namaLokasi } = selectedLokasi;
-    const isConfirmed = window.confirm(
-      `Anda yakin ingin menghapus "${namaLokasi}"? \n\nTindakan ini tidak dapat dibatalkan!`
-    );
-    if (isConfirmed) {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('Autentikasi gagal. Silakan login ulang.'); return;
-      }
+      if (!selectedItem || selectedItem.type !== 'rawan') return;
+      if (!window.confirm(`Hapus ${selectedItem.namaLokasi}?`)) return;
+
       try {
-        const response = await fetch(`http://localhost:5000/api/lokasi-rawan/${id}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) {
-          const errData = await response.json();
-          throw new Error(errData.message || 'Gagal menghapus lokasi');
-        }
-        alert(`Lokasi "${namaLokasi}" telah berhasil dihapus.`);
-        setIsMapPanningEnabled(false);
-        const newList = lokasiList.filter(l => l.id !== id);
-        setLokasiList(newList);
-        setSelectedLokasi(newList.length > 0 ? newList[0] : null);
-        setTimeout(() => { setIsMapPanningEnabled(true); }, 100);
-      } catch (err: any) {
-        console.error(err); alert('Error! ' + err.message);
+          const token = localStorage.getItem('token');
+          const response = await fetch(`${API_BASE_URL}/api/lokasi-rawan/${selectedItem.id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if(!response.ok) throw new Error("Gagal menghapus");
+          
+          alert("Berhasil dihapus");
+          setSelectedItem(null);
+          await fetchData();
+      } catch (e: any) {
+          alert(e.message);
       }
-    }
   };
 
-  const handleDeleteImage = async (imageUrlToDelete: string) => {
-    // ... (Tidak berubah)
-    if (!selectedLokasi) return;
-    const isConfirmed = window.confirm("Anda yakin ingin menghapus gambar ini?");
-    if (!isConfirmed) return;
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert('Autentikasi gagal. Silakan login ulang.');
-      return;
-    }
-    setIsSubmitting(true); 
-    try {
-      const response = await fetch(`http://localhost:5000/api/lokasi-rawan/${selectedLokasi.id}/delete-image`, {
-        method: 'PUT', 
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ imageUrl: imageUrlToDelete }) 
-      });
-      if (!response.ok) {
-        throw new Error('Gagal menghapus gambar');
-      }
-      alert('Gambar berhasil dihapus.');
-      setSelectedLokasi(prev => {
-        if (!prev) return null;
-        const newImages = prev.images.filter(img => img !== imageUrlToDelete);
-        return { ...prev, images: newImages };
-      });
-      await fetchData();
-    } catch (err: any) {
-      console.error(err);
-      alert('Error! ' + err.message);
-    } finally {
-      setIsSubmitting(false); 
-    }
-  };
-
-  // --- Handler baru untuk mem-proxy klik "Lokasi Lainnya" ---
-  const handleSelectItem = (lokasi: ILokasiRawan) => {
-    setIsMapPanningEnabled(true); 
-    setSelectedLokasi(lokasi);
-  };
+  const handleDeleteImage = async (imgUrl: string) => {
+      if (!selectedItem || selectedItem.type !== 'rawan') return;
+      if (!window.confirm("Hapus gambar ini?")) return;
+      
+      try {
+          const token = localStorage.getItem('token');
+          await fetch(`${API_BASE_URL}/api/lokasi-rawan/${selectedItem.id}/delete-image`, {
+             method: 'PUT',
+             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+             body: JSON.stringify({ imageUrl: imgUrl })
+          });
+          fetchData();
+          // Manual update state lokal agar UI responsif (opsional)
+          setSelectedItem(prev => prev && prev.type === 'rawan' ? {...prev, images: prev.images.filter(i => i !== imgUrl)} : prev);
+      } catch (e) { console.error(e); }
+  }
 
 
-  // --- (5) Tampilan Render ---
   return (
     <Box sx={{ p: 3, flexGrow: 1, bgcolor: '#fff4ea', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 90px)', overflow: 'hidden', boxSizing: 'border-box' }}>
-      {/* Judul (Dihapus) */}
-
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'row', gap: 2, overflow: 'hidden' }}>
         
-        {/* === KOLOM KIRI (PETA) === */}
+        {/* MAP CONTAINER */}
         <Box sx={{ flex: 1, position: 'relative', borderRadius: 2, overflow: 'hidden', boxShadow: 3 }}>
-          {loading ? ( 
+          {loading && !selectedItem ? ( 
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
               <CircularProgress /><Typography sx={{ ml: 2 }}>Memuat Peta...</Typography>
             </Box>
-          ) : error ? ( 
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <Typography color="error">{error}</Typography>
-            </Box>
           ) : (
             <InteractiveMap
-              markers={lokasiList}
+              markers={mapMarkers}
               onMarkerClick={handleMarkerClick}
               onMapClick={handleMapClick} 
-              centerCoordinates={isMapPanningEnabled && selectedLokasi ? [selectedLokasi.latitude, selectedLokasi.longitude] : undefined}
+              centerCoordinates={isMapPanningEnabled && selectedItem ? [Number(selectedItem.latitude), Number(selectedItem.longitude)] : undefined}
             />
           )}
         </Box>
 
-        {/* === KOLOM KANAN (SIDEBAR) === */}
-        {/* --- JSX Sidebar diganti dengan komponen baru --- */}
-        <LokasiSidebar
-          loading={loading}
-          error={error}
-          selectedLokasi={selectedLokasi}
-          lokasiList={lokasiList}
-          onSelectItem={handleSelectItem}
-          onEditClick={handleOpenEditModal}
+        {/* SIDEBAR CONTAINER */}
+        <UnifiedSidebar
+          loading={loading} error={error} selectedItem={selectedItem} itemList={mapMarkers}
+          onSelectItem={(item) => { setIsMapPanningEnabled(true); setSelectedItem(item); }}
+          onEditClick={() => { setIsEditMode(true); setOpenModal(true); }}
           onDeleteClick={handleDeleteLokasi}
         />
-        
       </Box>
 
-      {/* --- (7) MODAL (Tidak berubah) --- */}
-      <Modal
-        open={openModal}
-        onClose={() => setOpenModal(false)}
-        // ... (props modal lainnya)
-      >
+      {/* MODAL (Create/Edit Lokasi Rawan) */}
+      <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Fade in={openModal}>
-          <Box sx={modalStyle} component="form" onSubmit={(e) => {
-            e.preventDefault();
-            isEditMode ? handleUpdateLokasi() : handleSubmitBaru();
-          }}>
+          <Box sx={modalStyle} component="form" onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography variant="h6" component="h2">
-                {isEditMode ? 'Edit Lokasi Rawan' : 'Tambah Lokasi Rawan Baru'}
-              </Typography>
+              <Typography variant="h6">{isEditMode ? 'Edit Lokasi Rawan' : 'Tambah Lokasi Rawan'}</Typography>
               <IconButton onClick={() => setOpenModal(false)}><CloseIcon /></IconButton>
             </Stack>
             
@@ -532,73 +428,39 @@ const AdminPeta: React.FC = () => {
               margin="normal" required fullWidth label="Nama Lokasi"
               value={formData.namaLokasi}
               onChange={(e) => setFormData({ ...formData, namaLokasi: e.target.value })}
-              autoFocus
             />
             <TextField
-              margin="normal" fullWidth label="Deskripsi (Opsional)"
-              multiline rows={3}
+              margin="normal" fullWidth label="Deskripsi" multiline rows={3}
               value={formData.deskripsi}
               onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
             />
 
-            {isEditMode && selectedLokasi && selectedLokasi.images.length > 0 && (
-              <Box mt={2}>
-                <Typography variant="body2" gutterBottom>Gambar saat ini:</Typography>
-                <Paper variant="outlined" sx={{ maxHeight: 150, overflowY: 'auto', p: 1 }}>
-                  <Stack spacing={1}>
-                    {selectedLokasi.images.map((imgUrl) => (
-                      <Box key={imgUrl} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#f9f9f9', p: 0.5, borderRadius: 1 }}>
-                        <Typography 
-                          variant="caption" 
-                          sx={{ ml: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '80%' }}
-                        >
-                          {imgUrl.substring(imgUrl.lastIndexOf('/') + 1)} 
-                        </Typography>
-                        <IconButton 
-                          size="small" 
-                          color="error" 
-                          onClick={() => handleDeleteImage(imgUrl)}
-                          title="Hapus gambar ini"
-                          disabled={isSubmitting}
-                        >
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    ))}
-                  </Stack>
-                </Paper>
-              </Box>
+             {/* List Gambar Existing (Khusus Edit Mode) */}
+             {isEditMode && selectedItem && selectedItem.type === 'rawan' && selectedItem.images.length > 0 && (
+                <Box mt={2}>
+                    <Typography variant="caption">Gambar saat ini:</Typography>
+                    <Stack spacing={0.5} mt={0.5}>
+                        {selectedItem.images.map(img => (
+                            <Stack direction="row" justifyContent="space-between" bgcolor="#f5f5f5" p={0.5} borderRadius={1} key={img}>
+                                <Typography variant="caption" noWrap sx={{maxWidth: 250}}>{img.split('/').pop()}</Typography>
+                                <IconButton size="small" color="error" onClick={() => handleDeleteImage(img)}><CloseIcon fontSize="small"/></IconButton>
+                            </Stack>
+                        ))}
+                    </Stack>
+                </Box>
             )}
-            
-            <Button
-              variant="outlined" component="label" fullWidth
-              startIcon={<UploadFileIcon />} sx={{ mt: 2 }}
-            >
-              {imageFiles.length === 0 
-                ? (isEditMode ? 'Upload Gambar Tambahan' : 'Upload Gambar (Bisa Banyak)')
-                : `${imageFiles.length} file dipilih`
-              }
-              <input
-                type="file" hidden accept="image/png, image/jpeg, image/jpg"
-                multiple 
-                onChange={(e) => {
-                  if (e.target.files) {
-                    setImageFiles(Array.from(e.target.files));
-                  }
-                }}
-              />
+
+            <Button variant="outlined" component="label" fullWidth startIcon={<UploadFileIcon />} sx={{ mt: 2 }}>
+              {imageFiles.length === 0 ? 'Upload Gambar' : `${imageFiles.length} file dipilih`}
+              <input type="file" hidden multiple accept="image/*" onChange={(e) => e.target.files && setImageFiles(Array.from(e.target.files))} />
             </Button>
             
-            <Button
-              type="submit" fullWidth variant="contained" color="error"
-              disabled={isSubmitting} sx={{ mt: 3, mb: 2 }}
-            >
-              {isSubmitting ? <CircularProgress size={24} /> : (isEditMode ? 'Simpan Perubahan' : 'Simpan Lokasi')}
+            <Button type="submit" fullWidth variant="contained" color="error" disabled={isSubmitting} sx={{ mt: 3 }}>
+              {isSubmitting ? <CircularProgress size={24} /> : 'Simpan'}
             </Button>
           </Box>
         </Fade>
       </Modal>
-
     </Box>
   );
 };

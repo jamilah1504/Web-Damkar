@@ -20,6 +20,11 @@ import {
   Tooltip,
   Grid,
   Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -42,6 +47,8 @@ interface Jadwal {
   pj_sekolah?: string;
   kontak_pj?: string;
   surat_permohonan?: string;
+  userId?: number;
+  alasan_penolakan?: string;
 }
 
 const AdminJadwal: React.FC = () => {
@@ -49,6 +56,9 @@ const AdminJadwal: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [openRejectionModal, setOpenRejectionModal] = useState(false);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const fetchJadwal = async () => {
     try {
@@ -102,14 +112,198 @@ const AdminJadwal: React.FC = () => {
     }
   };
 
-  const updateStatus = async (id: number, newStatus: 'pending' | 'approved' | 'rejected') => {
+  const handleOpenRejectionModal = (id: number) => {
+    setSelectedId(id);
+    setOpenRejectionModal(true);
+  };
+
+  const handleCloseRejectionModal = () => {
+    setSelectedId(null);
+    setRejectionReason('');
+    setOpenRejectionModal(false);
+  };
+
+  const sendNotification = async (userId: number, title: string, message: string) => {
+    try {
+      await api.post('/notifikasi', {
+        userId,
+        judul: title,
+        isiPesan: message,
+        timestamp: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error('Gagal mengirim notifikasi:', err);
+    }
+  };
+
+  const handleSubmitRejection = async () => {
+    if (!selectedId) {
+      setError('ID kunjungan tidak valid');
+      return;
+    }
+    
+    if (!rejectionReason.trim()) {
+      setError('Harap masukkan alasan penolakan');
+      return;
+    }
+    
     try {
       setError(null);
-      await api.put(`/kunjungan/${id}/status`, { status: newStatus });
-      // Refresh data setelah update
-      fetchJadwal();
+      setLoading(true);
+      
+      // Update the status to rejected with reason
+      const response = await api.put(`/kunjungan/${selectedId}/status`, { 
+        status: 'rejected', 
+        alasan_penolakan: rejectionReason 
+      });
+      
+      console.log('Rejection response:', response);
+      
+      // Get the specific jadwal data to get user ID and other details
+      const jadwalItem = jadwalList.find(item => item.id === selectedId);
+      
+      if (jadwalItem) {
+        try {
+          await sendNotification(
+            jadwalItem.userId || 0, // Use 0 or another default if userId is not available
+            'Permohonan Ditolak',
+            `Mohon maaf, permohonan kunjungan edukasi Anda pada ${new Date(jadwalItem.tanggal_kunjungan).toLocaleDateString('id-ID', { 
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })} ditolak dengan alasan: ${rejectionReason}`
+          );
+        } catch (notifErr) {
+          console.error('Gagal mengirim notifikasi:', notifErr);
+          // Continue even if notification fails
+        }
+      }
+      
+      // Refresh the data
+      await fetchJadwal();
+      handleCloseRejectionModal();
     } catch (err: any) {
-      setError(err.response?.data?.message || err.response?.data?.msg || 'Gagal memperbarui status.');
+      console.error('Error in handleSubmitRejection:', err);
+      console.error('Error response:', err.response);
+      
+      const errorMessage = err.response?.data?.message 
+        || err.response?.data?.error 
+        || err.message 
+        || 'Gagal mengirim alasan penolakan. Silakan coba lagi.';
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateStatus = async (id: number, newStatus: 'approved' | 'rejected') => {
+    if (newStatus === 'rejected') {
+      handleOpenRejectionModal(id);
+      return;
+    }
+    
+    try {
+      setError(null);
+      setLoading(true);
+      
+      // Get the current jadwal data to ensure we have the necessary information
+      const jadwalItem = jadwalList.find(item => item.id === id);
+      
+      if (!jadwalItem) {
+        throw new Error('Data kunjungan tidak ditemukan');
+      }
+      
+      console.log('Updating status to:', newStatus, 'for jadwal ID:', id);
+      console.log('Current jadwal item:', jadwalItem);
+      
+      // Update the status
+      const response = await api.put(`/kunjungan/${id}/status`, { 
+        status: newStatus 
+      });
+      
+      console.log('Status update response:', response.data);
+      
+      // Prepare notification message
+      const notificationTitle = 'Permohonan Disetujui';
+      const notificationMessage = `Selamat! Permohonan kunjungan edukasi Anda pada ${new Date(jadwalItem.tanggal_kunjungan).toLocaleDateString('id-ID', { 
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })} telah disetujui.`;
+      
+      // Try to get userId from multiple possible sources
+      const userId = response.data?.userId || jadwalItem.userId || response.data?.data?.userId;
+      
+      if (userId) {
+        console.log('Sending notification to user ID:', userId);
+        console.log('Notification details:', {
+          userId,
+          title: notificationTitle,
+          message: notificationMessage
+        });
+        
+        try {
+          await sendNotification(
+            userId,
+            notificationTitle,
+            notificationMessage
+          );
+          console.log('Notification sent successfully');
+          
+          // Also update the local state to reflect the notification was sent
+          setJadwalList(prevList => 
+            prevList.map(item => 
+              item.id === id ? { ...item, status: 'approved' } : item
+            )
+          );
+          
+        } catch (notifError) {
+          console.error('Gagal mengirim notifikasi:', notifError);
+          // Continue with the update even if notification fails
+        }
+      } else {
+        console.warn('Tidak ada userId yang tersedia untuk mengirim notifikasi');
+        console.log('Jadwal item data:', jadwalItem);
+        console.log('Response data:', response.data);
+        
+        // If we're in development, simulate a notification for testing
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Running in development mode - attempting to send test notification');
+          try {
+            // Try with a test user ID (you can change this to a valid user ID for testing)
+            const testUserId = 1; // Replace with a valid user ID for testing
+            await sendNotification(
+              testUserId,
+              notificationTitle,
+              notificationMessage
+            );
+            console.log('Test notification sent successfully');
+          } catch (testError) {
+            console.error('Gagal mengirim notifikasi percobaan:', testError);
+          }
+        }
+      }
+      
+      // Refresh the data
+      await fetchJadwal();
+      
+      // Show success message
+      setError(null);
+      
+      // Show success alert
+      alert('Status berhasil diperbarui dan notifikasi telah dikirim');
+      
+    } catch (err: any) {
+      console.error('Error in updateStatus:', err);
+      console.error('Error response:', err.response);
+      const errorMessage = err.response?.data?.message || 'Gagal memperbarui status.';
+      setError(errorMessage);
+      alert(`Error: ${errorMessage}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -722,13 +916,17 @@ const AdminJadwal: React.FC = () => {
                     </TableCell>
                     <TableCell align="center">
                       <FormControl size="small" sx={{ minWidth: 150 }}>
-                        <InputLabel>Ubah Status</InputLabel>
+                        <InputLabel>Status</InputLabel>
                         <Select
-                          value={row.status}
-                          label="Ubah Status"
-                          onChange={(e) => updateStatus(row.id, e.target.value as 'pending' | 'approved' | 'rejected')}
+                          value={row.status === 'pending' ? '' : row.status}
+                          label="Status"
+                          onChange={(e) => updateStatus(row.id, e.target.value as 'approved' | 'rejected')}
+                          disabled={row.status === 'approved' || row.status === 'rejected'}
+                          displayEmpty
                         >
-                          <MenuItem value="pending">Pending</MenuItem>
+                          <MenuItem value="" disabled>
+                            <em>Pilih Status</em>
+                          </MenuItem>
                           <MenuItem value="approved">Disetujui</MenuItem>
                           <MenuItem value="rejected">Ditolak</MenuItem>
                         </Select>
@@ -741,6 +939,25 @@ const AdminJadwal: React.FC = () => {
           </Table>
         </TableContainer>
       )}
+      <Dialog open={openRejectionModal} onClose={handleCloseRejectionModal}>
+        <DialogTitle>Alasan Penolakan</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Alasan"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseRejectionModal}>Batal</Button>
+          <Button onClick={handleSubmitRejection} disabled={!rejectionReason.trim()}>Kirim</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
